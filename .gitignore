@@ -1,1 +1,4 @@
-data/
+41000_data
+48000_data
+raw_data
+*.npy
