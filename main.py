@@ -38,15 +38,22 @@ class HeyDittoNet:
             layers.Input(shape=xshape),
             layers.Resizing(32, 32),
             layers.Normalization(),
-            layers.Conv2D(32, 3, activation='relu'),
-            layers.Conv2D(64, 3, activation='relu'),
+
+            layers.Conv2D(32, 5, activation='relu'),
+            layers.BatchNormalization(),
             layers.MaxPooling2D(),
-            layers.Dropout(0.25),
+
+            layers.Conv2D(256, 3, activation='relu'),
+            layers.BatchNormalization(),
+
+            layers.Conv2D(32, 3, activation='relu'),
+            # layers.BatchNormalization(),
+            layers.MaxPooling2D(),
             layers.Flatten(),
-            layers.Dense(256, activation='relu'),
-            layers.Dropout(0.2),
-            # layers.Dense(64, activation='relu'),
-            # layers.Dropout(0.2),
+
+            layers.Dense(1024, activation='relu'),
+            layers.Dropout(0.5),
+
             layers.Dense(1),
             layers.Activation('sigmoid')
         ])
@@ -57,7 +64,7 @@ class HeyDittoNet:
     def train_model(self, model):
         name = 'HeyDittoNet'
         xtrain, xtest, ytrain, ytest = train_test_split(self.x, self.y, train_size=0.9)
-        self.hist = model.fit(xtrain, ytrain, epochs=100, verbose=1)
+        self.hist = model.fit(xtrain, ytrain, epochs=70, verbose=1)
         self.plot_history(self.hist)
         model.summary()
         ypreds = model.predict(xtest)
@@ -89,12 +96,12 @@ class HeyDittoNet:
             self.buffer = self.buffer[-RATE:]
             spect = self.get_spectrogram(self.buffer)
             pred = self.model.predict(np.expand_dims(spect, 0))
-            if pred[0][0] >= 0.9: 
+            if pred[0][0] >= 0.7: 
                 print(f'Activated with confidence: {pred[0][0]*100}%')
                 if self.reinforce:
                     self.train_data_x.append(spect)
                     self.train_data_y.append(0)
-            else: print(pred[0][0])
+            else: print(f'{pred[0][0]*100}%')
         if self.frames > 0:
             self.frames += frames
             if self.frames >= RATE/4:
