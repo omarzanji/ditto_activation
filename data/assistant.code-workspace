@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "../../assistant"
+		},
+		{
+			"path": "../../ditto-app"
+		},
+		{
+			"path": ".."
+		}
+	],
+	"settings": {}
+}

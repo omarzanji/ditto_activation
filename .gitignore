@@ -2,3 +2,8 @@
 48000_data
 raw_data
 *.npy
+*.wav
+Hospital noise original/
+synthetic_data/
+mp3_data/
+common_voice_dataset/

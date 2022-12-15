@@ -1,0 +1,6 @@
+tensorflow
+librosa
+sounddevice
+scikit-learn
+matplotlib
+numpy

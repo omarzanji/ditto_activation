@@ -1,5 +1,6 @@
 import json
 import numpy as np
+import os
 
 from tensorflow.keras.models import Sequential
 import tensorflow.keras.layers as layers
@@ -13,11 +14,31 @@ from matplotlib import pyplot as plt
 import time as tm 
 import sounddevice as sd
 
+# supress tf
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
+TRAIN = False
+REINFORCE = False
+MODEL_SELECT = 1 # 0 for CNN, 1 for CNN-LSTM
+MODEL = ['CNN', 'CNN-LSTM'][MODEL_SELECT]
 RATE = 16000
 
 class HeyDittoNet:
 
-    def __init__(self):
+    def __init__(self, train=False, model_type='CNN'):
+        self.train = train
+        self.model_type = model_type
+        if train:
+            self.load_data()
+            # if model_type == 'CNN-LSTM': self.create_time_series()
+            model = self.create_model()
+            self.train_model(model)
+            plt.show()
+        else:
+            self.load_model()
+            self.test_model(reinforce=REINFORCE)
+            
+    def load_data(self):
         try:
             self.x = np.load('data/x_data.npy', allow_pickle=True)
             self.y = np.load('data/y_data.npy', allow_pickle=True)
@@ -28,49 +49,75 @@ class HeyDittoNet:
             print('cached x and y .npy not found! Run create_data.py in data/ ...')
             self.x = []
             self.y = []
-    
+
     def load_model(self):
-        self.model = keras.models.load_model('models/HeyDittoNet')
+        self.model = keras.models.load_model(f'models/HeyDittoNet_{self.model_type}')
 
     def create_model(self):
-        xshape = self.x.shape[1:]
-        model = Sequential([
-            layers.Input(shape=xshape),
-            layers.Resizing(32, 32),
-            layers.Normalization(),
+        if self.model_type == 'CNN':
+            xshape = self.x.shape[1:]
+            model = Sequential([
+                layers.Input(shape=xshape),
+                layers.Resizing(32, 32),
+                layers.Normalization(),
 
-            layers.Conv2D(32, 5, activation='relu'),
-            layers.BatchNormalization(),
-            layers.MaxPooling2D(),
+                layers.Conv2D(32, (7,7), padding="same", activation="relu"),
+                layers.BatchNormalization(),
+                layers.MaxPooling2D(pool_size=(2,2)),
 
-            layers.Conv2D(256, 3, activation='relu'),
-            layers.BatchNormalization(),
+                layers.Conv2D(64, (5,5), padding="same", activation="relu"),
+                layers.BatchNormalization(),
+                layers.MaxPooling2D(pool_size=(2,2)),
 
-            layers.Conv2D(32, 3, activation='relu'),
-            # layers.BatchNormalization(),
-            layers.MaxPooling2D(),
-            layers.Flatten(),
+                layers.Conv2D(128, (3,3), padding="same", activation="relu"),
+                layers.BatchNormalization(),
+                # layers.MaxPooling2D(pool_size=(2,2)),
+                layers.Flatten(),
 
-            layers.Dense(1024, activation='relu'),
-            layers.Dropout(0.5),
+                layers.Dense(256, activation='relu'),
+                layers.Dropout(0.5),
 
-            layers.Dense(1),
-            layers.Activation('sigmoid')
-        ])
-        
-        model.compile(loss='binary_crossentropy', optimizer='adam', metrics='accuracy')
-        return model
+                # layers.Dense(512, activation='relu'),
+                # layers.Dropout(0.5),
+
+                layers.Dense(1),
+                layers.Activation('sigmoid')
+            ])
+            
+            model.compile(loss='binary_crossentropy', optimizer='adam', metrics='accuracy')
+            return model
+        elif self.model_type == 'CNN-LSTM':
+            model = Sequential([
+                layers.Conv2D(32, (7,7), padding="same", activation="relu"),
+                layers.MaxPooling2D(pool_size=(2,2)),
+                layers.Conv2D(64, (5,5), padding="same", activation="relu"),
+                layers.MaxPooling2D(pool_size=(2,2)),
+                layers.Conv2D(128, (3,3), padding="same", activation="relu"),
+                layers.MaxPooling2D(pool_size=(2,2)),
+                layers.TimeDistributed(layers.Flatten()),
+                layers.LSTM(32),
+                layers.Dense(1),
+                layers.Activation('sigmoid')
+            ])
+            model.compile(loss='binary_crossentropy', optimizer='adam', metrics='accuracy')
+            return model
 
     def train_model(self, model):
-        name = 'HeyDittoNet'
+        if self.model_type == 'CNN': 
+            epochs = 25
+            batch_size = 32
+        else: 
+            epochs = 8
+            batch_size = 64
+        name = f'HeyDittoNet_{self.model_type}'
         xtrain, xtest, ytrain, ytest = train_test_split(self.x, self.y, train_size=0.9)
-        self.hist = model.fit(xtrain, ytrain, epochs=70, verbose=1)
+        self.hist = model.fit(xtrain, ytrain, epochs=epochs, verbose=1, batch_size=batch_size)
         self.plot_history(self.hist)
         model.summary()
         ypreds = model.predict(xtest)
         self.ypreds = []
         for y in ypreds:
-            if y>=0.9: self.ypreds.append(1)
+            if y>=0.6: self.ypreds.append(1)
             else: self.ypreds.append(0)
         self.ypreds = np.array(self.ypreds)
         accuracy = accuracy_score(ytest, self.ypreds)
@@ -95,20 +142,21 @@ class HeyDittoNet:
             self.frames+=frames
             self.buffer = self.buffer[-RATE:]
             spect = self.get_spectrogram(self.buffer)
-            pred = self.model.predict(np.expand_dims(spect, 0))
-            if pred[0][0] >= 0.7: 
+            pred = self.model.predict(np.expand_dims(spect, 0), verbose=0)
+            if pred[0][0] >= 0.6: 
                 print(f'Activated with confidence: {pred[0][0]*100}%')
+                print('\nidle...\n')
                 if self.reinforce:
                     self.train_data_x.append(spect)
                     self.train_data_y.append(0)
-            else: print(f'{pred[0][0]*100}%')
+            else: 
+                # print(f'{pred[0][0]*100}%')
+                pass
         if self.frames > 0:
             self.frames += frames
             if self.frames >= RATE/4:
                 self.frames=0
-        self.time = tm.time() - self.start_time
-        
-        
+                    
     def get_spectrogram(self, waveform: list) -> list:
         '''
         Function for converting 16K Hz waveform to spectrogram.
@@ -144,31 +192,26 @@ class HeyDittoNet:
         self.train_data_y = []
         self.reinforce = reinforce
         self.frames = 0
-        print(sd.query_devices())
-
-        try:
-            self.start_time = tm.time()
-            with sd.InputStream(device=0, samplerate=fs, dtype='float32', latency=None, channels=1, callback=self.callback):
-                input()
-        except KeyboardInterrupt:
-            if reinforce:
-                with open('data/reinforced_data/conf.json', 'r') as f:
-                    conf = json.load(f)
-                    sesssion_number = conf['sessions_total']
-                print('saving to cache...')
-                np.save(f'data/reinforced_data/{sesssion_number}_train_data_x.npy', self.train_data_x)
-                np.save(f'data/reinforced_data/{sesssion_number}_train_data_y.npy', self.train_data_y)
-                with open('data/reinforced_data/conf.json', 'w') as f:
-                    conf['sessions_total'] = sesssion_number+1
-                    json.dump(conf, f)
+        # print(sd.query_devices())
+        print('\nidle...\n')
+        self.start_time = tm.time()
+        with sd.InputStream(device=0, samplerate=fs, dtype='float32', latency=None, channels=1, callback=self.callback) as stream:
+            input()
+        if reinforce:
+            with open('data/reinforced_data/conf.json', 'r') as f:
+                conf = json.load(f)
+                sesssion_number = conf['sessions_total']
+            print('saving to cache...')
+            np.save(f'data/reinforced_data/{sesssion_number}_train_data_x.npy', self.train_data_x)
+            np.save(f'data/reinforced_data/{sesssion_number}_train_data_y.npy', self.train_data_y)
+            with open('data/reinforced_data/conf.json', 'w') as f:
+                conf['sessions_total'] = sesssion_number+1
+                json.dump(conf, f)
 
 if __name__ == "__main__":
-    network = HeyDittoNet()
-    train = False
-    if train:
-        model = network.create_model()
-        network.train_model(model)
-        plt.show()
-    else:
-        network.load_model()
-        network.test_model(reinforce=False)
+
+    network = HeyDittoNet(
+        train=TRAIN,
+        model_type='CNN-LSTM'
+    )
+    
