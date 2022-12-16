@@ -1,4 +1,5 @@
 import json
+import sqlite3
 import numpy as np
 import os
 
@@ -12,7 +13,7 @@ from tensorflow import keras
 from matplotlib import pyplot as plt
 
 import queue
-import time as tm 
+import time 
 import sounddevice as sd
 
 # supress tf
@@ -30,10 +31,11 @@ class HeyDittoNet:
     '''
     HeyDittoNet is a model for recognizing "Hey Ditto" from machine's default mic. 
     '''
-    def __init__(self, train=False, model_type='CNN'):
+    def __init__(self, train=False, model_type='CNN', path=''):
         self.train = train
         self.model_type = model_type
         self.activated = 0
+        self.path = path
         if train:
             self.load_data()
             # if model_type == 'CNN-LSTM': self.create_time_series()
@@ -56,7 +58,7 @@ class HeyDittoNet:
             self.y = []
 
     def load_model(self):
-        self.model = keras.models.load_model(f'models/HeyDittoNet_{self.model_type}')
+        self.model = keras.models.load_model(f'{self.path}models/HeyDittoNet_{self.model_type}')
 
     def create_model(self):
         if self.model_type == 'CNN':
@@ -191,6 +193,15 @@ class HeyDittoNet:
 
     def listen_for_name(self, reinforce=False):
         self.activated = 0
+        self.timeout = time.time() + 4 # 4 seconds (used for gesture recognition)
+        self.running = True # set to false to interrupt elsewhere (might remove this)
+        self.prompt = "" # used for GUI skip wake and skip STT (inject prompt)
+        self.inject_prompt = False # set to true in check_for_request function to skip STT module
+        self.gesture = "" # grabbed from gesture_recognition module
+        self.gesture_activation = False # set to true in check_for_gesture function to skip wake using gesture
+        self.palm_count = 0 # used to filter false positives
+        self.like_count = 0
+        self.dislike_count = 0
         fs = RATE
         self.buffer = []
         self.train_data_x = []
@@ -199,11 +210,14 @@ class HeyDittoNet:
         self.frames = 0
         # print(sd.query_devices())
         print('\nidle...\n')
-        self.start_time = tm.time()
+        self.start_time = time.time()
         with sd.InputStream(device=0, samplerate=fs, dtype='float32', latency=None, channels=1, callback=self.callback) as stream:
             while True:
                 q.get()
-                if self.activated: break
+                if not self.path=='':
+                    self.check_for_request()
+                    self.check_for_gesture()
+                if self.activated or self.running==False: break
         if reinforce:
             with open('data/reinforced_data/conf.json', 'r') as f:
                 conf = json.load(f)
@@ -215,6 +229,92 @@ class HeyDittoNet:
                 conf['sessions_total'] = sesssion_number+1
                 json.dump(conf, f)
         return self.activated
+
+    def check_for_gesture(self):
+        '''
+        Checks for gesture to skip wake.
+        '''
+        def reset_counts():
+            self.like_count = 0
+            self.dislike_count = 0
+            self.palm_count = 0
+
+        if time.time() > self.timeout:
+            # print('gesture check timeout')
+            self.timeout = time.time() + 4
+            # reset gesture counters
+            reset_counts()
+        try:
+            SQL = sqlite3.connect("ditto.db")
+            cur = SQL.cursor()
+            req = cur.execute("select * from gestures")
+            req = req.fetchall()
+            like_gest = False
+            dislike_gest = False
+            palm_gest = False
+            for i in req:
+                if 'like' in i: 
+                    like_gest=True
+                    print('like')
+                if 'dislike' in i: 
+                    dislike_gest=True
+                    print('dislike')
+                if 'palm' in i: 
+                    print('palm')
+                    palm_gest=True
+            if like_gest or dislike_gest or palm_gest:
+                if like_gest: self.like_count += 1
+                if dislike_gest: self.dislike_count += 1
+                if palm_gest: self.palm_count += 1
+
+                if self.like_count == 3:
+                    reset_counts()
+                    print("\n[Activated from Like Gesture]\n")
+                    self.running = False
+                    self.gesture_activation = True
+                    self.gesture = 'like'
+
+                if self.dislike_count == 3:
+                    reset_counts()
+                    print("\n[Activated from Dislike Gesture]\n")
+                    self.running = False
+                    self.gesture_activation = True
+                    self.gesture = 'dislike'
+
+                if self.palm_count == 3:
+                    reset_counts()
+                    print("\n[Activated from Palm Gesture]\n")
+                    self.running = False
+                    self.gesture_activation = True
+                    self.gesture = 'palm'
+            cur.execute("DELETE FROM gestures")
+            SQL.commit()
+            SQL.close()
+        except BaseException as e:
+            pass
+            # print(e)
+        if self.gesture_activation: self.activated = 1
+    def check_for_request(self):
+        ''' 
+        Checks if the user sent a prompt from the client GUI.
+        '''
+        try:
+            
+            SQL = sqlite3.connect("ditto.db")
+            cur = SQL.cursor()
+            req = cur.execute("select * from ditto_requests")
+            req = req.fetchone()
+            if req[0] == "prompt":
+                self.prompt = req[1]
+                print("\n[GUI prompt received]\n")
+                cur.execute("DROP TABLE ditto_requests")
+                SQL.close()
+                self.running = False
+                self.inject_prompt = True
+                self.activated = 1
+        except BaseException as e:
+            pass
+            # print(e)
 
 if __name__ == "__main__":
 
