@@ -10,7 +10,8 @@ import tensorflow as tf
 from tensorflow import keras
 
 from matplotlib import pyplot as plt
-    
+
+import queue
 import time as tm 
 import sounddevice as sd
 
@@ -23,11 +24,16 @@ MODEL_SELECT = 1 # 0 for CNN, 1 for CNN-LSTM
 MODEL = ['CNN', 'CNN-LSTM'][MODEL_SELECT]
 RATE = 16000
 
-class HeyDittoNet:
+q = queue.Queue()
 
+class HeyDittoNet:
+    '''
+    HeyDittoNet is a model for recognizing "Hey Ditto" from machine's default mic. 
+    '''
     def __init__(self, train=False, model_type='CNN'):
         self.train = train
         self.model_type = model_type
+        self.activated = 0
         if train:
             self.load_data()
             # if model_type == 'CNN-LSTM': self.create_time_series()
@@ -36,7 +42,6 @@ class HeyDittoNet:
             plt.show()
         else:
             self.load_model()
-            self.test_model(reinforce=REINFORCE)
             
     def load_data(self):
         try:
@@ -134,7 +139,7 @@ class HeyDittoNet:
         plt.legend(['training loss'], loc='upper right')
 
     def callback(self, indata, frames, time, status):
-        
+        q.put(indata.copy())
         indata = np.array(indata).flatten()
         for vals in indata:
             self.buffer.append(vals)
@@ -145,7 +150,7 @@ class HeyDittoNet:
             pred = self.model.predict(np.expand_dims(spect, 0), verbose=0)
             if pred[0][0] >= 0.6: 
                 print(f'Activated with confidence: {pred[0][0]*100}%')
-                print('\nidle...\n')
+                self.activated = 1
                 if self.reinforce:
                     self.train_data_x.append(spect)
                     self.train_data_y.append(0)
@@ -184,8 +189,8 @@ class HeyDittoNet:
         spectrogram = spectrogram[..., tf.newaxis]
         return spectrogram
 
-    def test_model(self, reinforce=False):
-
+    def listen_for_name(self, reinforce=False):
+        self.activated = 0
         fs = RATE
         self.buffer = []
         self.train_data_x = []
@@ -196,7 +201,9 @@ class HeyDittoNet:
         print('\nidle...\n')
         self.start_time = tm.time()
         with sd.InputStream(device=0, samplerate=fs, dtype='float32', latency=None, channels=1, callback=self.callback) as stream:
-            input()
+            while True:
+                q.get()
+                if self.activated: break
         if reinforce:
             with open('data/reinforced_data/conf.json', 'r') as f:
                 conf = json.load(f)
@@ -207,6 +214,7 @@ class HeyDittoNet:
             with open('data/reinforced_data/conf.json', 'w') as f:
                 conf['sessions_total'] = sesssion_number+1
                 json.dump(conf, f)
+        return self.activated
 
 if __name__ == "__main__":
 
@@ -215,3 +223,5 @@ if __name__ == "__main__":
         model_type='CNN-LSTM'
     )
     
+    wake = network.listen_for_name()
+    if wake: print('name spoken!')
