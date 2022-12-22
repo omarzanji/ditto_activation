@@ -99,10 +99,10 @@ class HeyDittoNet:
                 layers.MaxPooling2D(pool_size=(2,2)),
                 layers.Conv2D(64, (5,5), padding="same", activation="relu"),
                 layers.MaxPooling2D(pool_size=(2,2)),
-                layers.Conv2D(128, (3,3), padding="same", activation="relu"),
-                layers.MaxPooling2D(pool_size=(2,2)),
+                # layers.Conv2D(128, (3,3), padding="same", activation="relu"),
+                # layers.MaxPooling2D(pool_size=(2,2)),
                 layers.TimeDistributed(layers.Flatten()),
-                layers.LSTM(32),
+                layers.LSTM(8),
                 layers.Dense(1),
                 layers.Activation('sigmoid')
             ])
@@ -294,6 +294,7 @@ class HeyDittoNet:
             pass
             # print(e)
         if self.gesture_activation: self.activated = 1
+
     def check_for_request(self):
         ''' 
         Checks if the user sent a prompt from the client GUI.
