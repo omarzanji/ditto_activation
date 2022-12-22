@@ -9,6 +9,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 import tensorflow as tf
 from tensorflow import keras
+from tensorflow.keras import backend as K
 
 from matplotlib import pyplot as plt
 
@@ -19,19 +20,18 @@ import sounddevice as sd
 # supress tf
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-TRAIN = True
+TRAIN = False
 REINFORCE = False
 MODEL_SELECT = 1 # 0 for CNN, 1 for CNN-LSTM
 MODEL = ['CNN', 'CNN-LSTM'][MODEL_SELECT]
 RATE = 16000
-
-q = queue.Queue()
 
 class HeyDittoNet:
     '''
     HeyDittoNet is a model for recognizing "Hey Ditto" from machine's default mic. 
     '''
     def __init__(self, train=False, model_type='CNN', path=''):
+        self.q = queue.Queue()
         self.train = train
         self.model_type = model_type
         self.activated = 0
@@ -141,7 +141,7 @@ class HeyDittoNet:
         plt.legend(['training loss'], loc='upper right')
 
     def callback(self, indata, frames, time, status):
-        q.put(indata.copy())
+        self.q.put(indata.copy())
         indata = np.array(indata).flatten()
         for vals in indata:
             self.buffer.append(vals)
@@ -149,7 +149,8 @@ class HeyDittoNet:
             self.frames+=frames
             self.buffer = self.buffer[-RATE:]
             spect = self.get_spectrogram(self.buffer)
-            pred = self.model.predict(np.expand_dims(spect, 0), verbose=0)
+            pred = self.model(np.expand_dims(spect, 0))
+            K.clear_session()
             if pred[0][0] >= 0.6: 
                 print(f'Activated with confidence: {pred[0][0]*100}%')
                 self.activated = 1
@@ -213,7 +214,7 @@ class HeyDittoNet:
         self.start_time = time.time()
         with sd.InputStream(device=0, samplerate=fs, dtype='float32', latency=None, channels=1, callback=self.callback) as stream:
             while True:
-                q.get()
+                self.q.get()
                 if not self.path=='':
                     self.check_for_request()
                     self.check_for_gesture()
@@ -248,7 +249,7 @@ class HeyDittoNet:
             SQL = sqlite3.connect("ditto.db")
             cur = SQL.cursor()
             req = cur.execute("select * from gestures")
-            req = req.fetchall()
+            req = reself.q.fetchall()
             like_gest = False
             dislike_gest = False
             palm_gest = False
@@ -304,7 +305,7 @@ class HeyDittoNet:
             SQL = sqlite3.connect("ditto.db")
             cur = SQL.cursor()
             req = cur.execute("select * from ditto_requests")
-            req = req.fetchone()
+            req = reself.q.fetchone()
             if req[0] == "prompt":
                 self.prompt = req[1]
                 print("\n[GUI prompt received]\n")
