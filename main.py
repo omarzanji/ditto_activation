@@ -19,7 +19,7 @@ import sounddevice as sd
 # supress tf
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-TRAIN = False
+TRAIN = True
 REINFORCE = False
 MODEL_SELECT = 1 # 0 for CNN, 1 for CNN-LSTM
 MODEL = ['CNN', 'CNN-LSTM'][MODEL_SELECT]
@@ -95,10 +95,10 @@ class HeyDittoNet:
             return model
         elif self.model_type == 'CNN-LSTM':
             model = Sequential([
-                layers.Conv2D(32, (7,7), padding="same", activation="relu"),
+                layers.Conv2D(32, (5,5), padding="same", activation="relu"),
                 layers.MaxPooling2D(pool_size=(2,2)),
-                layers.Conv2D(64, (5,5), padding="same", activation="relu"),
-                layers.MaxPooling2D(pool_size=(2,2)),
+                # layers.Conv2D(64, (5,5), padding="same", activation="relu"),
+                # layers.MaxPooling2D(pool_size=(2,2)),
                 # layers.Conv2D(128, (3,3), padding="same", activation="relu"),
                 # layers.MaxPooling2D(pool_size=(2,2)),
                 layers.TimeDistributed(layers.Flatten()),
@@ -114,7 +114,7 @@ class HeyDittoNet:
             epochs = 25
             batch_size = 32
         else: 
-            epochs = 8
+            epochs = 15
             batch_size = 64
         name = f'HeyDittoNet_{self.model_type}'
         xtrain, xtest, ytrain, ytest = train_test_split(self.x, self.y, train_size=0.9)
