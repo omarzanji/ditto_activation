@@ -246,10 +246,10 @@ class HeyDittoNet:
             # reset gesture counters
             reset_counts()
         try:
-            SQL = sqlite3.connect("ditto.db")
+            SQL = sqlite3.connect(f'ditto.db')
             cur = SQL.cursor()
             req = cur.execute("select * from gestures")
-            req = self.q.fetchall()
+            req = req.fetchall()
             like_gest = False
             dislike_gest = False
             palm_gest = False
@@ -302,10 +302,10 @@ class HeyDittoNet:
         '''
         try:
             
-            SQL = sqlite3.connect("ditto.db")
+            SQL = sqlite3.connect(f'ditto.db')
             cur = SQL.cursor()
             req = cur.execute("select * from ditto_requests")
-            req = self.q.fetchone()
+            req = req.fetchone()
             if req[0] == "prompt":
                 self.prompt = req[1]
                 print("\n[GUI prompt received]\n")
