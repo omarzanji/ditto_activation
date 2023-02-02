@@ -97,12 +97,12 @@ class HeyDittoNet:
             model = Sequential([
                 layers.Conv2D(32, (5,5), padding="same", activation="relu"),
                 layers.MaxPooling2D(pool_size=(2,2)),
-                # layers.Conv2D(64, (5,5), padding="same", activation="relu"),
-                # layers.MaxPooling2D(pool_size=(2,2)),
+                layers.Conv2D(64, (5,5), padding="same", activation="relu"),
+                layers.MaxPooling2D(pool_size=(2,2)),
                 # layers.Conv2D(128, (3,3), padding="same", activation="relu"),
                 # layers.MaxPooling2D(pool_size=(2,2)),
                 layers.TimeDistributed(layers.Flatten()),
-                layers.LSTM(8),
+                layers.LSTM(16),
                 layers.Dense(1),
                 layers.Activation('sigmoid')
             ])
@@ -249,7 +249,7 @@ class HeyDittoNet:
             SQL = sqlite3.connect("ditto.db")
             cur = SQL.cursor()
             req = cur.execute("select * from gestures")
-            req = reself.q.fetchall()
+            req = self.q.fetchall()
             like_gest = False
             dislike_gest = False
             palm_gest = False
@@ -305,7 +305,7 @@ class HeyDittoNet:
             SQL = sqlite3.connect("ditto.db")
             cur = SQL.cursor()
             req = cur.execute("select * from ditto_requests")
-            req = reself.q.fetchone()
+            req = self.q.fetchone()
             if req[0] == "prompt":
                 self.prompt = req[1]
                 print("\n[GUI prompt received]\n")
