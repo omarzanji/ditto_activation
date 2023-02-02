@@ -25,6 +25,7 @@ REINFORCE = False
 MODEL_SELECT = 1 # 0 for CNN, 1 for CNN-LSTM
 MODEL = ['CNN', 'CNN-LSTM'][MODEL_SELECT]
 RATE = 16000
+SENSITIVITY = 0.99
 
 class HeyDittoNet:
     '''
@@ -95,14 +96,22 @@ class HeyDittoNet:
             return model
         elif self.model_type == 'CNN-LSTM':
             model = Sequential([
+                layers.Resizing(32, 32),
+                                
                 layers.Conv2D(32, (5,5), padding="same", activation="relu"),
+                layers.BatchNormalization(),
                 layers.MaxPooling2D(pool_size=(2,2)),
+                                               
                 layers.Conv2D(64, (5,5), padding="same", activation="relu"),
+                layers.BatchNormalization(),
                 layers.MaxPooling2D(pool_size=(2,2)),
-                # layers.Conv2D(128, (3,3), padding="same", activation="relu"),
+                                               
+                layers.Conv2D(128, (3,3), padding="same", activation="relu"),
+                layers.BatchNormalization(),
                 # layers.MaxPooling2D(pool_size=(2,2)),
+                                               
                 layers.TimeDistributed(layers.Flatten()),
-                layers.LSTM(16),
+                layers.LSTM(32),
                 layers.Dense(1),
                 layers.Activation('sigmoid')
             ])
@@ -131,6 +140,7 @@ class HeyDittoNet:
         print(f'\n\n[Accuracy: {accuracy}]\n\n')
         self.ytest = ytest
         model.save(f'models/{name}')
+        self.model = model
 
     def plot_history(self, history):
         plt.figure()
@@ -151,7 +161,7 @@ class HeyDittoNet:
             spect = self.get_spectrogram(self.buffer)
             pred = self.model(np.expand_dims(spect, 0))
             K.clear_session()
-            if pred[0][0] >= 0.6: 
+            if pred[0][0] >= SENSITIVITY: 
                 print(f'Activated with confidence: {pred[0][0]*100}%')
                 self.activated = 1
                 if self.reinforce:
@@ -324,6 +334,8 @@ if __name__ == "__main__":
         train=TRAIN,
         model_type='CNN-LSTM'
     )
-    
-    wake = network.listen_for_name()
+    if REINFORCE:
+        
+        wake = network.listen_for_name(REINFORCE)
+    else: wake = network.listen_for_name()
     if wake: print('name spoken!')
