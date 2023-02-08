@@ -23,6 +23,12 @@ import time
 #     stamp = int(time.time())+ndx+1
 #     os.system(f'ffmpeg -y -i "mp3_data/{file}" -ar 16000 "raw_data/heyditto-{stamp}-{file}.wav"')
 
+# files = os.listdir('elvenlabs_samples/')
+# for ndx,file in enumerate(files):
+#     stamp = int(time.time())+ndx+1
+#     os.system(f'ffmpeg -y -i "elvenlabs_samples/{file}" -ar 16000 "raw_data/heyditto-{stamp}-{file}.wav"')
+
+
 # files = os.listdir('common_voice_dataset/data/')
 # for ndx,file in enumerate(files):
 #     stamp = int(time.time())+ndx+1

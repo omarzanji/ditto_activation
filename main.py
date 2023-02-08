@@ -123,7 +123,7 @@ class HeyDittoNet:
             epochs = 25
             batch_size = 32
         else: 
-            epochs = 15
+            epochs = 20
             batch_size = 64
         name = f'HeyDittoNet_{self.model_type}'
         xtrain, xtest, ytrain, ytest = train_test_split(self.x, self.y, train_size=0.9)
