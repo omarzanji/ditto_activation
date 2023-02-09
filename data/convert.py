@@ -49,6 +49,11 @@ import time
 # for i in range(0, int(y.size), chunk_size): # iterate through each second
 #     sf.write(f'raw_data/background_horns_{i}.wav', y[i:i+chunk_size], 16000)
 
+# y, s = librosa.load(f'background_data/synthesized_audio_background.wav',sr=16000, mono=True)
+# chunk_size = int(y.size/(y.size/16000)) # each sample is 1 second, so to get 1 second chunks, divide by RATE
+# for i in range(0, int(y.size), chunk_size): # iterate through each second
+#     sf.write(f'raw_data/background_synthetic_voices{i}.wav', y[i:i+chunk_size], 16000)
+
 
 # files = os.listdir('common_voice_dataset/wav_data/')
 # size = len(files)
