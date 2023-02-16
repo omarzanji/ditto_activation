@@ -228,17 +228,20 @@ class HeyDittoNet:
                 if not self.path=='':
                     self.check_for_request()
                     self.check_for_gesture()
+                
+                if self.activated and reinforce:
+                    with open('data/reinforced_data/conf.json', 'r') as f:
+                        conf = json.load(f)
+                        sesssion_number = conf['sessions_total']
+                    print('saving to cache...')
+                    np.save(f'data/reinforced_data/{sesssion_number}_train_data_x.npy', self.train_data_x)
+                    np.save(f'data/reinforced_data/{sesssion_number}_train_data_y.npy', self.train_data_y)
+                    with open('data/reinforced_data/conf.json', 'w') as f:
+                        conf['sessions_total'] = sesssion_number+1
+                        json.dump(conf, f)
+
                 if self.activated or self.running==False: break
-        if reinforce:
-            with open('data/reinforced_data/conf.json', 'r') as f:
-                conf = json.load(f)
-                sesssion_number = conf['sessions_total']
-            print('saving to cache...')
-            np.save(f'data/reinforced_data/{sesssion_number}_train_data_x.npy', self.train_data_x)
-            np.save(f'data/reinforced_data/{sesssion_number}_train_data_y.npy', self.train_data_y)
-            with open('data/reinforced_data/conf.json', 'w') as f:
-                conf['sessions_total'] = sesssion_number+1
-                json.dump(conf, f)
+
         return self.activated
 
     def check_for_gesture(self):
@@ -335,7 +338,8 @@ if __name__ == "__main__":
         model_type='CNN-LSTM'
     )
     if REINFORCE:
-        
-        wake = network.listen_for_name(REINFORCE)
+        while True:
+            wake = network.listen_for_name(REINFORCE)
+
     else: wake = network.listen_for_name()
     if wake: print('name spoken!')
