@@ -22,6 +22,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 TRAIN = False
 REINFORCE = False
+TFLITE = True
 MODEL_SELECT = 1 # 0 for CNN, 1 for CNN-LSTM
 MODEL = ['CNN', 'CNN-LSTM'][MODEL_SELECT]
 RATE = 16000
@@ -31,10 +32,11 @@ class HeyDittoNet:
     '''
     HeyDittoNet is a model for recognizing "Hey Ditto" from machine's default mic. 
     '''
-    def __init__(self, train=False, model_type='CNN', path=''):
+    def __init__(self, train=False, model_type='CNN', tflite=False, path=''):
         self.q = queue.Queue()
         self.train = train
         self.model_type = model_type
+        self.tflite = tflite
         self.activated = 0
         self.path = path
         if train:
@@ -59,7 +61,16 @@ class HeyDittoNet:
             self.y = []
 
     def load_model(self):
-        self.model = keras.models.load_model(f'{self.path}models/HeyDittoNet_{self.model_type}')
+        if not self.tflite:
+            self.model = keras.models.load_model(f'{self.path}models/HeyDittoNet_{self.model_type}')
+        else:
+            # Load TFLite model and allocate tensors.
+            with open('models/model.tflite', 'rb') as f:
+                self.model = f.read()
+            self.interpreter = tf.lite.Interpreter(model_content=self.model)
+            self.interpreter.allocate_tensors()
+            self.input_index = self.interpreter.get_input_details()[0]["index"]
+            self.output_index = self.interpreter.get_output_details()[0]["index"]
 
     def create_model(self):
         if self.model_type == 'CNN':
@@ -159,7 +170,11 @@ class HeyDittoNet:
             self.frames+=frames
             self.buffer = self.buffer[-RATE:]
             spect = self.get_spectrogram(self.buffer)
-            pred = self.model(np.expand_dims(spect, 0))
+            if self.tflite: 
+                self.interpreter.set_tensor(self.input_index, np.expand_dims(spect, 0))
+                self.interpreter.invoke()
+                pred = self.interpreter.get_tensor(self.output_index)
+            else: pred = self.model(np.expand_dims(spect, 0))
             K.clear_session()
             if pred[0][0] >= SENSITIVITY: 
                 print(f'Activated with confidence: {pred[0][0]*100}%')
@@ -335,7 +350,8 @@ if __name__ == "__main__":
 
     network = HeyDittoNet(
         train=TRAIN,
-        model_type='CNN-LSTM'
+        model_type='CNN-LSTM',
+        tflite=TFLITE
     )
     if REINFORCE:
         while True:
