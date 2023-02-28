@@ -65,7 +65,7 @@ class HeyDittoNet:
             self.model = keras.models.load_model(f'{self.path}models/HeyDittoNet_{self.model_type}')
         else:
             # Load TFLite model and allocate tensors.
-            with open('models/model.tflite', 'rb') as f:
+            with open(f'{self.path}models/model.tflite', 'rb') as f:
                 self.model = f.read()
             self.interpreter = tf.lite.Interpreter(model_content=self.model)
             self.interpreter.allocate_tensors()
