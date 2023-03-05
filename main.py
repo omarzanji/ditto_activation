@@ -21,7 +21,7 @@ import sounddevice as sd
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 TRAIN = False
-REINFORCE = False
+REINFORCE = True
 TFLITE = True
 MODEL_SELECT = 1 # 0 for CNN, 1 for CNN-LSTM
 MODEL = ['CNN', 'CNN-LSTM'][MODEL_SELECT]
@@ -123,7 +123,7 @@ class HeyDittoNet:
                                                
                 layers.TimeDistributed(layers.Flatten()),
                 layers.LSTM(8),
-                layers.Dropout(0.5),
+                layers.Dropout(0.2),
                 layers.Dense(1),
                 layers.Activation('sigmoid')
             ])
@@ -135,8 +135,8 @@ class HeyDittoNet:
             epochs = 25
             batch_size = 32
         else: 
-            epochs = 30
-            batch_size = 32
+            epochs = 35
+            batch_size = 16
         name = f'HeyDittoNet_{self.model_type}'
         xtrain, xtest, ytrain, ytest = train_test_split(self.x, self.y, train_size=0.9)
         self.hist = model.fit(xtrain, ytrain, epochs=epochs, verbose=1, batch_size=batch_size)
