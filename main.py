@@ -94,7 +94,7 @@ class HeyDittoNet:
                 layers.Flatten(),
 
                 layers.Dense(256, activation='relu'),
-                layers.Dropout(0.5),
+                layers.Dropout(0.3),
 
                 # layers.Dense(512, activation='relu'),
                 # layers.Dropout(0.5),
@@ -117,12 +117,13 @@ class HeyDittoNet:
                 layers.BatchNormalization(),
                 layers.MaxPooling2D(pool_size=(2,2)),
                                                
-                layers.Conv2D(128, (3,3), padding="same", activation="relu"),
-                layers.BatchNormalization(),
+                # layers.Conv2D(128, (3,3), padding="same", activation="relu"),
+                # layers.BatchNormalization(),
                 # layers.MaxPooling2D(pool_size=(2,2)),
                                                
                 layers.TimeDistributed(layers.Flatten()),
-                layers.LSTM(32),
+                layers.LSTM(8),
+                layers.Dropout(0.5),
                 layers.Dense(1),
                 layers.Activation('sigmoid')
             ])
@@ -134,8 +135,8 @@ class HeyDittoNet:
             epochs = 25
             batch_size = 32
         else: 
-            epochs = 20
-            batch_size = 64
+            epochs = 30
+            batch_size = 32
         name = f'HeyDittoNet_{self.model_type}'
         xtrain, xtest, ytrain, ytest = train_test_split(self.x, self.y, train_size=0.9)
         self.hist = model.fit(xtrain, ytrain, epochs=epochs, verbose=1, batch_size=batch_size)
