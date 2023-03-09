@@ -13,7 +13,7 @@ from tensorflow.keras import backend as K
 
 from matplotlib import pyplot as plt
 
-import queue
+# import queue
 import time 
 import sounddevice as sd
 
@@ -21,7 +21,7 @@ import sounddevice as sd
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 TRAIN = False
-REINFORCE = True
+REINFORCE = False
 TFLITE = True
 MODEL_SELECT = 1 # 0 for CNN, 1 for CNN-LSTM
 MODEL = ['CNN', 'CNN-LSTM'][MODEL_SELECT]
@@ -33,7 +33,7 @@ class HeyDittoNet:
     HeyDittoNet is a model for recognizing "Hey Ditto" from machine's default mic. 
     '''
     def __init__(self, train=False, model_type='CNN', tflite=False, path=''):
-        self.q = queue.Queue()
+        # self.q = queue.Queue()
         self.train = train
         self.model_type = model_type
         self.tflite = tflite
@@ -163,7 +163,7 @@ class HeyDittoNet:
         plt.legend(['training loss'], loc='upper right')
 
     def callback(self, indata, frames, time, status):
-        self.q.put(indata.copy())
+        # self.q.put(indata.copy())
         indata = np.array(indata).flatten()
         for vals in indata:
             self.buffer.append(vals)
@@ -240,7 +240,7 @@ class HeyDittoNet:
         self.start_time = time.time()
         with sd.InputStream(device=0, samplerate=fs, dtype='float32', latency=None, channels=1, callback=self.callback) as stream:
             while True:
-                self.q.get()
+                # self.q.get()
                 if not self.path=='':
                     self.check_for_request()
                     self.check_for_gesture()
