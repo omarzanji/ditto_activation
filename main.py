@@ -246,13 +246,13 @@ class HeyDittoNet:
                     self.check_for_gesture()
                 
                 if self.activated and reinforce:
-                    with open('data/reinforced_data/conf.json', 'r') as f:
+                    with open(f'{self.path}data/reinforced_data/conf.json', 'r') as f:
                         conf = json.load(f)
                         sesssion_number = conf['sessions_total']
                     print('saving to cache...')
-                    np.save(f'data/reinforced_data/{sesssion_number}_train_data_x.npy', self.train_data_x)
-                    np.save(f'data/reinforced_data/{sesssion_number}_train_data_y.npy', self.train_data_y)
-                    with open('data/reinforced_data/conf.json', 'w') as f:
+                    np.save(f'{self.path}data/reinforced_data/{sesssion_number}_train_data_x.npy', self.train_data_x)
+                    np.save(f'{self.path}data/reinforced_data/{sesssion_number}_train_data_y.npy', self.train_data_y)
+                    with open(f'{self.path}data/reinforced_data/conf.json', 'w') as f:
                         conf['sessions_total'] = sesssion_number+1
                         json.dump(conf, f)
 
