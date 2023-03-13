@@ -20,9 +20,9 @@ import sounddevice as sd
 # supress tf
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-TRAIN = False
+TRAIN = True
 REINFORCE = False
-TFLITE = True
+TFLITE = False
 MODEL_SELECT = 1 # 0 for CNN, 1 for CNN-LSTM
 MODEL = ['CNN', 'CNN-LSTM'][MODEL_SELECT]
 RATE = 16000
@@ -117,13 +117,13 @@ class HeyDittoNet:
                 layers.BatchNormalization(),
                 layers.MaxPooling2D(pool_size=(2,2)),
                                                
-                # layers.Conv2D(128, (3,3), padding="same", activation="relu"),
-                # layers.BatchNormalization(),
-                # layers.MaxPooling2D(pool_size=(2,2)),
+                layers.Conv2D(128, (3,3), padding="same", activation="relu"),
+                layers.BatchNormalization(),
+                layers.MaxPooling2D(pool_size=(2,2)),
                                                
                 layers.TimeDistributed(layers.Flatten()),
-                layers.LSTM(16),
-                # layers.Dropout(0.2),
+                layers.LSTM(8),
+                # layers.Dropout(0.5),
                 layers.Dense(1),
                 layers.Activation('sigmoid')
             ])
@@ -135,8 +135,8 @@ class HeyDittoNet:
             epochs = 25
             batch_size = 32
         else: 
-            epochs = 35
-            batch_size = 16
+            epochs = 25
+            batch_size = 32
         name = f'HeyDittoNet_{self.model_type}'
         xtrain, xtest, ytrain, ytest = train_test_split(self.x, self.y, train_size=0.9)
         self.hist = model.fit(xtrain, ytrain, epochs=epochs, verbose=1, batch_size=batch_size)
