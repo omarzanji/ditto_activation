@@ -122,8 +122,8 @@ class HeyDittoNet:
                 # layers.MaxPooling2D(pool_size=(2,2)),
                                                
                 layers.TimeDistributed(layers.Flatten()),
-                layers.LSTM(8),
-                layers.Dropout(0.2),
+                layers.LSTM(16),
+                # layers.Dropout(0.2),
                 layers.Dense(1),
                 layers.Activation('sigmoid')
             ])

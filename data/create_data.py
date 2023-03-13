@@ -23,9 +23,9 @@ def white_noise(sample):
 def stretch(sample, rate=1):
     max_len = 16000
     data = librosa.effects.time_stretch(sample, rate=rate)
-    if len(sample)>max_len: # if gets too big, snip the end
+    if len(data)>max_len: # if gets too big, snip the end
         data = data[:max_len]
-    else: # if gets too small, pad with zeros
+    elif len(data)<16000: # if gets too small, pad with zeros
         data = np.pad(data, (0, max(0, max_len - len(data))))
     return data
 
@@ -41,6 +41,16 @@ def normalize_audio(sample):
     audio = AudioSegment.from_wav(sample)
     audio_norm = effects.normalize(audio)
     samples = audio_norm.get_array_of_samples()
+    max_len = 16000
+    if len(samples)>max_len: # if gets too big, snip the end
+        # print(sample)
+        # print('sample too long (snipping)')
+        # print(len(samples))
+        samples = samples[:max_len]
+    elif len(samples)<16000: # if gets too small, pad with zeros
+        # print('sample too short (padding)')
+        # print(len(samples))
+        samples = np.pad(samples, (0, max(0, max_len - len(samples))))
     audio_norm._spawn(samples) # write to samples
     return np.array(samples).astype(np.float32, order='C') / 32768.0
 
@@ -74,14 +84,12 @@ def generate_data() -> tuple:
     for activation_phrase, background_noise in zip(activation_set, background_set): #NOTE: zip through background sets too and overlay normalized audio with lowered background!!
         # audio = librosa.load(activation_phrase, sr=16000)
         audio = [normalize_audio(activation_phrase)]
-        spect = get_spectrogram(audio[0])
-        x.append(spect)
-        y.append(1) # activate 
+        
 
         # data augmentation
         # audio_normalized = normalize_audio(activation_phrase)
         audio_quiet = lower_volume(activation_phrase, db=15)
-        audio_really_quiet = lower_volume(activation_phrase, db=25)
+        # audio_really_quiet = lower_volume(activation_phrase, db=20)
         # audio_very_quiet = lower_volume(activation_phrase, db=30)
         audio_noise = white_noise(audio[0])
         audio_stretch_low = stretch(audio[0], rate=0.9)
@@ -103,12 +111,17 @@ def generate_data() -> tuple:
         # time.sleep(1)
         # sounddevice.play(audio_really_quiet, samplerate=16000)
         # time.sleep(2)
+        # sounddevice.play(combined_audio, samplerate=16000)
+        # time.sleep(1)
         # exit()
-        
+
+        spect = get_spectrogram(audio[0])
+        x.append(spect)
+        y.append(1) # activate 
         x.append(get_spectrogram(audio_quiet))
         y.append(1)
-        x.append(get_spectrogram(audio_really_quiet))
-        y.append(1)
+        # x.append(get_spectrogram(audio_really_quiet))
+        # y.append(1)
         # x.append(get_spectrogram(audio_very_quiet))
         # y.append(1)
         x.append(get_spectrogram(audio_noise))
@@ -120,7 +133,7 @@ def generate_data() -> tuple:
         x.append(get_spectrogram(combined_audio))
         y.append(1)
 
-        t_cnt+=7 # true class count
+        t_cnt+=6 # true class count
 
     for background_noise in background_set:
         audio = librosa.load(background_noise, sr=16000)

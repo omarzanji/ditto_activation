@@ -23,10 +23,21 @@ import time
 #     stamp = int(time.time())+ndx+1
 #     os.system(f'ffmpeg -y -i "mp3_data/{file}" -ar 16000 "raw_data/heyditto-{stamp}-{file}.wav"')
 
-files = os.listdir('elvenlabs_samples/session4/')
+# files = os.listdir('elvenlabs_samples/session4/')
+# for ndx,file in enumerate(files):
+#     stamp = int(time.time())+ndx+1
+#     os.system(f'ffmpeg -y -i "elvenlabs_samples/session4/{file}" -ar 16000 "raw_data/heyditto-{stamp}-{file}.wav"')
+
+# files = os.listdir('gtts_session1/')
+# for ndx,file in enumerate(files):
+#     stamp = int(time.time())+ndx+1
+#     os.system(f'ffmpeg -y -i "gtts_session1/{file}" -ar 16000 "test_raw_data/heyditto-{stamp}-{file}.wav"')
+
+folder = 'gtts_session6_background/'
+files = os.listdir(folder)
 for ndx,file in enumerate(files):
     stamp = int(time.time())+ndx+1
-    os.system(f'ffmpeg -y -i "elvenlabs_samples/session4/{file}" -ar 16000 "raw_data/heyditto-{stamp}-{file}.wav"')
+    os.system(f'ffmpeg -y -i "{folder}/{file}" -ar 16000 "raw_data/background-{stamp}-{file}.wav"')
 
 
 # files = os.listdir('common_voice_dataset/data/')
