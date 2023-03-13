@@ -33,7 +33,7 @@ import time
 #     stamp = int(time.time())+ndx+1
 #     os.system(f'ffmpeg -y -i "gtts_session1/{file}" -ar 16000 "test_raw_data/heyditto-{stamp}-{file}.wav"')
 
-folder = 'gtts_session6_background/'
+folder = 'gtts_session12_background/'
 files = os.listdir(folder)
 for ndx,file in enumerate(files):
     stamp = int(time.time())+ndx+1

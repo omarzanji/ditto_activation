@@ -33,7 +33,7 @@ def text_to_wav(voice_name: str, voice_gender: str, text: str, folder: str):
 voices = list_voices()
 random.shuffle(voices)
 for ndx,voice in enumerate(voices):
-    if ndx+1 == 15: break
+    if ndx+1 == 40: break
     name = voice.name
     gender = voice.ssml_gender
-    text_to_wav(name, gender, "Hey cheeto", 'gtts_session7_background')
+    text_to_wav(name, gender, "Hey man", 'gtts_session13_background') # TODO: Ran session13 background
