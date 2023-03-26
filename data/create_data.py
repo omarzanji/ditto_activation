@@ -14,10 +14,10 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 RATE = 16000
 
-def white_noise(sample):
+def white_noise(sample, amount=0.005):
     # Add white noise to sample with scaling 
     wn = np.random.randn(len(sample))
-    data_wn = sample + 0.005*wn
+    data_wn = sample + amount*wn
     return data_wn
 
 def stretch(sample, rate=1):
@@ -81,13 +81,10 @@ def generate_data() -> tuple:
     y = []
 
     t_cnt, f_cnt = 0,0
-    for activation_phrase, background_noise in zip(activation_set, background_set): #NOTE: zip through background sets too and overlay normalized audio with lowered background!!
+    for activation_phrase, background_noise in zip(activation_set, background_set):
         # audio = librosa.load(activation_phrase, sr=16000)
         audio = [normalize_audio(activation_phrase)]
-        
-
         # data augmentation
-        # audio_normalized = normalize_audio(activation_phrase)
         audio_quiet = lower_volume(activation_phrase, db=15)
         # audio_really_quiet = lower_volume(activation_phrase, db=20)
         # audio_very_quiet = lower_volume(activation_phrase, db=30)
@@ -135,12 +132,42 @@ def generate_data() -> tuple:
 
         t_cnt+=6 # true class count
 
-    for background_noise in background_set:
-        audio = librosa.load(background_noise, sr=16000)
+    for ndx,background_noise in enumerate(background_set):
+        count = ndx + 1
+        # audio = librosa.load(background_noise, sr=16000)
+        audio = [normalize_audio(background_noise)]
         spect = get_spectrogram(audio[0])
+
         x.append(spect)
-        y.append(0) # do nothing
-        f_cnt+=1 # false class count
+        y.append(0) 
+        if count < 500: # apply augmentations to only 500 false samples 
+            audio_noise = white_noise(audio[0], amount=0.1)
+            x.append(get_spectrogram(audio_noise))
+            y.append(0)
+
+            audio_loud = lower_volume(background_noise, db=-30)
+            x.append(get_spectrogram(audio_loud))
+            y.append(0)
+
+            audio_quiet = lower_volume(background_noise, db=15)
+            x.append(get_spectrogram(audio_quiet))
+            y.append(0)
+
+            f_cnt+=4 # false class count
+
+            # sounddevice.play(audio[0], samplerate=16000)
+            # time.sleep(1)
+
+            # sounddevice.play(audio_noise, samplerate=16000)
+            # time.sleep(1)
+
+            # sounddevice.play(audio_loud, samplerate=16000)
+            # time.sleep(1)
+
+            # sounddevice.play(audio_quiet, samplerate=16000)
+            # time.sleep(1)
+        else: 
+            f_cnt+=1 # false class count
 
     try:
         print('loading reinforcement sessions...\n')
