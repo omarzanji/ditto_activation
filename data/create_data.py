@@ -1,4 +1,5 @@
 import json
+import random
 import os
 import time
 import librosa
@@ -58,7 +59,7 @@ def combine_with(activation, background):
     a_audio = AudioSegment.from_wav(activation)
     a_audio_norm = effects.normalize(a_audio)
     b_audio = AudioSegment.from_wav(background)
-    b_audio_norm = effects.normalize(b_audio) - 8
+    b_audio_norm = effects.normalize(b_audio) - np.random.randint(8, 10)
     audio = a_audio_norm.overlay(b_audio_norm)
     samples = audio.get_array_of_samples() # write to samples
     return np.array(samples).astype(np.float32, order='C') / 32768.0
@@ -81,16 +82,18 @@ def generate_data() -> tuple:
     y = []
 
     t_cnt, f_cnt = 0,0
+    random.shuffle(activation_set)
+    random.shuffle(background_set)
     for activation_phrase, background_noise in zip(activation_set, background_set):
         # audio = librosa.load(activation_phrase, sr=16000)
         audio = [normalize_audio(activation_phrase)]
         # data augmentation
-        audio_quiet = lower_volume(activation_phrase, db=15)
+        audio_quiet = lower_volume(activation_phrase, db=np.random.randint(10, 15))
         # audio_really_quiet = lower_volume(activation_phrase, db=20)
         # audio_very_quiet = lower_volume(activation_phrase, db=30)
-        audio_noise = white_noise(audio[0])
-        audio_stretch_low = stretch(audio[0], rate=0.9)
-        audio_stretch_high = stretch(audio[0], rate=1.2)
+        audio_noise = white_noise(audio[0], amount=random.uniform(0.002, 0.02))
+        audio_stretch_low = stretch(audio[0], rate=random.uniform(0.88, 0.99))
+        audio_stretch_high = stretch(audio[0], rate=random.uniform(1.1, 1.3))
         combined_audio = combine_with(activation_phrase, background_noise)
         # print(audio[0])
         # print(audio_quiet)
@@ -140,16 +143,17 @@ def generate_data() -> tuple:
 
         x.append(spect)
         y.append(0) 
-        if count < 500: # apply augmentations to only 500 false samples 
-            audio_noise = white_noise(audio[0], amount=0.1)
+        N = 2000
+        if count < N: # apply augmentations to N false samples 
+            audio_noise = white_noise(audio[0], amount=random.uniform(0.002, 0.2))
             x.append(get_spectrogram(audio_noise))
             y.append(0)
 
-            audio_loud = lower_volume(background_noise, db=-30)
+            audio_loud = lower_volume(background_noise, db=np.random.randint(-30, -10)+np.random.rand()) # Increases volume
             x.append(get_spectrogram(audio_loud))
             y.append(0)
 
-            audio_quiet = lower_volume(background_noise, db=15)
+            audio_quiet = lower_volume(background_noise, db=np.random.randint(10, 20)+np.random.rand()) # Decreases volume
             x.append(get_spectrogram(audio_quiet))
             y.append(0)
 

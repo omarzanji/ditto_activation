@@ -28,10 +28,10 @@ import time
 #     stamp = int(time.time())+ndx+1
 #     os.system(f'ffmpeg -y -i "elvenlabs_samples/session4/{file}" -ar 16000 "raw_data/heyditto-{stamp}-{file}.wav"')
 
-files = os.listdir('gtts_session2/')
+files = os.listdir('gtts_session3/')
 for ndx,file in enumerate(files):
     stamp = int(time.time())+ndx+1
-    os.system(f'ffmpeg -y -i "gtts_session2/{file}" -ar 16000 "raw_data/heyditto-{stamp}-{file}.wav"')
+    os.system(f'ffmpeg -y -i "gtts_session3/{file}" -ar 16000 "raw_data/heyditto-{stamp}-{file}.wav"')
 
 # for i in range(12):
 #     session_num = i + 1

@@ -297,21 +297,21 @@ class HeyDittoNet:
                 if dislike_gest: self.dislike_count += 1
                 if palm_gest: self.palm_count += 1
 
-                if self.like_count == 3:
+                if self.like_count == 2:
                     reset_counts()
                     print("\n[Activated from Like Gesture]\n")
                     self.running = False
                     self.gesture_activation = True
                     self.gesture = 'like'
 
-                if self.dislike_count == 3:
+                if self.dislike_count == 2:
                     reset_counts()
                     print("\n[Activated from Dislike Gesture]\n")
                     self.running = False
                     self.gesture_activation = True
                     self.gesture = 'dislike'
 
-                if self.palm_count == 3:
+                if self.palm_count == 2:
                     reset_counts()
                     print("\n[Activated from Palm Gesture]\n")
                     self.running = False

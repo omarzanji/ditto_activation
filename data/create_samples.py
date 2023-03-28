@@ -28,6 +28,7 @@ def text_to_wav(voice_name: str, voice_gender: str, text: str, folder: str, pitc
     )
     if not os.path.exists(folder): os.mkdir(folder)
     filename = f"{folder}/heyditto-{language_code}-{voice_name}-{voice_gender}-{pitch}.wav"
+    # filename = f"{folder}/background-{language_code}-{voice_name}-{voice_gender}-{pitch}.wav"
     with open(filename, "wb") as out:
         out.write(response.audio_content)
         print(f'Generated speech saved to "{filename}"')
@@ -50,8 +51,8 @@ def generate_heyditto_samples():
             pitches = list(range(-20, 21))
             random.shuffle(pitches)
             for ndx,pitch in enumerate(pitches):
-                if ndx+1 == 10: break
+                if ndx+1 == 20: break
                 print('generating voice with pitch %d' % pitch)
-                text_to_wav(name, gender, "Hey Ditto", 'gtts_session2', pitch=pitch)
+                text_to_wav(name, gender, "Hey Ditto", 'gtts_session3', pitch=pitch)
 
 generate_heyditto_samples()
