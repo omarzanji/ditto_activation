@@ -106,6 +106,7 @@ class HeyDittoNet:
             model.compile(loss='binary_crossentropy', optimizer='adam', metrics='accuracy')
             return model
         elif self.model_type == 'CNN-LSTM':
+            self.callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=3)
             model = Sequential([
                 layers.Resizing(32, 32),
                                 
@@ -136,10 +137,10 @@ class HeyDittoNet:
             batch_size = 32
         else: 
             epochs = 30
-            batch_size = 32
+            batch_size = 64
         name = f'HeyDittoNet_{self.model_type}'
         xtrain, xtest, ytrain, ytest = train_test_split(self.x, self.y, train_size=0.9)
-        self.hist = model.fit(xtrain, ytrain, epochs=epochs, verbose=1, batch_size=batch_size)
+        self.hist = model.fit(xtrain, ytrain, epochs=epochs, verbose=1, batch_size=batch_size, callbacks=[self.callback])
         self.plot_history(self.hist)
         model.summary()
         ypreds = model.predict(xtest)

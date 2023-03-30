@@ -83,7 +83,7 @@ def generate_data() -> tuple:
 
     t_cnt, f_cnt = 0,0
     random.shuffle(activation_set)
-    random.shuffle(background_set)
+    # random.shuffle(background_set) # probably shouldn't shuffle for RNN to understand people talking in order 
     for activation_phrase, background_noise in zip(activation_set, background_set):
         # audio = librosa.load(activation_phrase, sr=16000)
         audio = [normalize_audio(activation_phrase)]

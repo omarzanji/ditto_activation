@@ -28,10 +28,10 @@ import time
 #     stamp = int(time.time())+ndx+1
 #     os.system(f'ffmpeg -y -i "elvenlabs_samples/session4/{file}" -ar 16000 "raw_data/heyditto-{stamp}-{file}.wav"')
 
-files = os.listdir('gtts_session3/')
-for ndx,file in enumerate(files):
-    stamp = int(time.time())+ndx+1
-    os.system(f'ffmpeg -y -i "gtts_session3/{file}" -ar 16000 "raw_data/heyditto-{stamp}-{file}.wav"')
+# files = os.listdir('gtts_session3/')
+# for ndx,file in enumerate(files):
+#     stamp = int(time.time())+ndx+1
+#     os.system(f'ffmpeg -y -i "gtts_session3/{file}" -ar 16000 "raw_data/heyditto-{stamp}-{file}.wav"')
 
 # for i in range(12):
 #     session_num = i + 1
@@ -77,12 +77,26 @@ for ndx,file in enumerate(files):
 #     sf.write(f'raw_data/background-omar-talking-2-{i}.wav', y[i:i+chunk_size], 16000)
 
 # files = os.listdir('common_voice_dataset/wav_data/')
-# size = len(files)
+# # size = len(files)
 # print('converting common voice dataset to background dataset')
 # for ndx,file in enumerate(files):
-#     y, s = librosa.load(f'common_voice_dataset/wav_data/{file}',sr=16000, mono=True)
+#     stamp = int(time.time())+ndx+1
+#     if ndx>500:
+#         print(f'converting {file}')
+#         y, s = librosa.load(f'common_voice_dataset/wav_data/{file}',sr=16000, mono=True)
+#         seconds = y.size / 16000
+#         chunk_size = int(y.size/seconds) # get size of 1 second chunk by dividing total size by sample rate
+#         for i in range(0, int(y.size), chunk_size): # iterate through each second
+#             sf.write(f'raw_data/background_{file}_{i}_{stamp}.wav', y[i:i+chunk_size+1], 16000)
+
+# files = os.listdir('elvenlabs_samples/session1-background/')
+# num_files = len(files)
+# print(f'converting {num_files} elevenlabs files to background dataset')
+# for ndx,file in enumerate(files):
+#     print(f'converting {file}')
+#     stamp = int(time.time())+ndx+1
+#     y, s = librosa.load(f'elvenlabs_samples/session1-background/{file}',sr=16000, mono=True)
 #     seconds = y.size / 16000
-#     chunk_size = int(y.size/seconds) # each sample is 5 seconds, so to get 1 second chunks, divide by 5
+#     chunk_size = int(y.size/seconds) # get size of 1 second chunk by dividing total size by sample rate
 #     for i in range(0, int(y.size), chunk_size): # iterate through each second
-#         sf.write(f'raw_data/background_{file}_{i}.wav', y[i:i+chunk_size+1], 16000)
-#     if ndx==500: exit()
+#         sf.write(f'raw_data/background_{file}_{i}_{stamp}.wav', y[i:i+chunk_size+1], 16000)
