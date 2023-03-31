@@ -143,8 +143,10 @@ def generate_data() -> tuple:
 
         x.append(spect)
         y.append(0) 
-        N = 2000
-        if count < N: # apply augmentations to N false samples 
+        N = 1500
+        if count < N or\
+                'Neural' in background_noise or 'Wavenet' in background_noise or\
+                'Standard' in background_noise or 'News' in background_noise: # apply augmentations to N false samples 
             audio_noise = white_noise(audio[0], amount=random.uniform(0.002, 0.2))
             x.append(get_spectrogram(audio_noise))
             y.append(0)

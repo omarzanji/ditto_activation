@@ -23,10 +23,10 @@ import time
 #     stamp = int(time.time())+ndx+1
 #     os.system(f'ffmpeg -y -i "mp3_data/{file}" -ar 16000 "raw_data/heyditto-{stamp}-{file}.wav"')
 
-# files = os.listdir('elvenlabs_samples/session4/')
-# for ndx,file in enumerate(files):
-#     stamp = int(time.time())+ndx+1
-#     os.system(f'ffmpeg -y -i "elvenlabs_samples/session4/{file}" -ar 16000 "raw_data/heyditto-{stamp}-{file}.wav"')
+files = os.listdir('elvenlabs_samples/session5/')
+for ndx,file in enumerate(files):
+    stamp = int(time.time())+ndx+1
+    os.system(f'ffmpeg -y -i "elvenlabs_samples/session5/{file}" -ar 16000 "raw_data/heyditto-{stamp}-{file}.wav"')
 
 # files = os.listdir('gtts_session3/')
 # for ndx,file in enumerate(files):
@@ -34,12 +34,13 @@ import time
 #     os.system(f'ffmpeg -y -i "gtts_session3/{file}" -ar 16000 "raw_data/heyditto-{stamp}-{file}.wav"')
 
 # for i in range(12):
-#     session_num = i + 1
-#     folder = f'gtts_session{session_num}_background/'
-#     files = os.listdir(folder)
-#     for ndx,file in enumerate(files):
-#         stamp = int(time.time())+ndx+1
-#         os.system(f'ffmpeg -y -i "{folder}/{file}" -ar 16000 "raw_data/background-{stamp}-{file}.wav"')
+    # session_num = i + 1
+# session_num = 13
+# folder = f'gtts_session{session_num}_background/'
+# files = os.listdir(folder)
+# for ndx,file in enumerate(files):
+#     stamp = int(time.time())+ndx+1
+#     os.system(f'ffmpeg -y -i "{folder}/{file}" -ar 16000 "raw_data/background-{stamp}-{file}.wav"')
 
 
 # files = os.listdir('common_voice_dataset/data/')

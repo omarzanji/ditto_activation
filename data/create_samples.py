@@ -1,8 +1,55 @@
 import google.cloud.texttospeech as tts
 import os
 import random
-
 import numpy as np
+from elevenlabslib import *
+import json
+import soundfile as sf
+import soundfile
+import io
+
+def save_bytes_to_path(filepath:str, audioData:bytes) -> None:
+    """
+    This function saves the audio data to the specified location.
+    soundfile is used for the conversion, so it supports any format it does.
+    :param filepath: The path where the data will be saved to.
+    :param audioData: The audio data.
+    """
+    fp = open(filepath, "wb")
+    tempSoundFile = soundfile.SoundFile(io.BytesIO(audioData))
+    sf.write(fp,tempSoundFile.read(), tempSoundFile.samplerate)
+
+def gen_eleven_labs_sample(text, fname='heyditto'):
+    key = ''
+    with open('api_key.json','r') as f:
+        key = json.load(f)['key']
+    if key == '': return 'Needs API Key'
+
+    user = ElevenLabsUser(key)
+    voices = user.get_all_voices()
+    random.shuffle(voices)
+    for voice in voices:
+    # voice = user.get_voices_by_name("Rachel")[0]  # This is a list because multiple voices can have the same name
+
+    # voice.play_preview(playInBackground=False)
+
+    # voice.generate_and_play_audio(text, playInBackground=False)
+        for i in range(20):
+            print(f'generating {voice.voiceID} iteration {i+1}')
+            s = np.random.rand()
+            sb = np.random.rand()
+            data = voice.generate_audio_bytes(
+                prompt=text,
+                stability=s,
+                similarity_boost=sb
+            )
+            save_bytes_to_path(f"elvenlabs_samples/session5/{voice.voiceID}-{fname}-{i}-{s}-{sb}.wav", data)
+
+    # for historyItem in user.get_history_items():
+    #     if historyItem.text == text:
+    #         # The first items are the newest, so we can stop as soon as we find one.
+    #         historyItem.delete()
+    #         break
 
 def list_voices(language_code=None):
     client = tts.TextToSpeechClient()
@@ -27,20 +74,22 @@ def text_to_wav(voice_name: str, voice_gender: str, text: str, folder: str, pitc
         input=text_input, voice=voice_params, audio_config=audio_config
     )
     if not os.path.exists(folder): os.mkdir(folder)
-    filename = f"{folder}/heyditto-{language_code}-{voice_name}-{voice_gender}-{pitch}.wav"
-    # filename = f"{folder}/background-{language_code}-{voice_name}-{voice_gender}-{pitch}.wav"
+    # filename = f"{folder}/heyditto-{language_code}-{voice_name}-{voice_gender}-{pitch}.wav"
+    filename = f"{folder}/background-{text.replace(' ','')}-{language_code}-{voice_name}-{voice_gender}-{pitch}.wav"
     with open(filename, "wb") as out:
         out.write(response.audio_content)
         print(f'Generated speech saved to "{filename}"')
 
 def generate_background_samples():
     voices = list_voices()
-    random.shuffle(voices)
+    # random.shuffle(voices)
     for ndx,voice in enumerate(voices):
-        if ndx+1 == 40: break
         name = voice.name
-        gender = voice.ssml_gender
-        text_to_wav(name, gender, "Hey man", 'gtts_session13_background', pitch=0) # TODO: Ran session13 background
+        if 'US-Neural' in name:
+            gender = voice.ssml_gender
+            words = ["had it", "had to", "headed", "how dye do", "head to toe", "Hideo", "hadith", "had to", "hated", "hooded", "Hey Dad", "heeded"]
+            for word in words:
+                text_to_wav(name, gender, word, 'gtts_session13_background', pitch=0) # TODO: Run session13 background
 
 def generate_heyditto_samples():
     voices = list_voices()
@@ -53,6 +102,19 @@ def generate_heyditto_samples():
             for ndx,pitch in enumerate(pitches):
                 if ndx+1 == 20: break
                 print('generating voice with pitch %d' % pitch)
-                text_to_wav(name, gender, "Hey Ditto", 'gtts_session3', pitch=pitch)
+                text_to_wav(name, gender, "Hey Ditto", 'gtts_session4', pitch=pitch)
 
-generate_heyditto_samples()
+# generate_heyditto_samples()
+# generate_background_samples()
+# gen_eleven_labs_sample(
+#     text='Hey Ditto.', 
+#     fname='heyditto-period'
+# )
+gen_eleven_labs_sample(
+    text='Hey Ditto!', 
+    fname='heyditto-exclamation'
+)
+gen_eleven_labs_sample(
+    text='Hey Ditto...', 
+    fname='heyditto-dotdotdot'
+)
