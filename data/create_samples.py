@@ -29,27 +29,17 @@ def gen_eleven_labs_sample(text, fname='heyditto'):
     voices = user.get_all_voices()
     random.shuffle(voices)
     for voice in voices:
-    # voice = user.get_voices_by_name("Rachel")[0]  # This is a list because multiple voices can have the same name
-
-    # voice.play_preview(playInBackground=False)
-
-    # voice.generate_and_play_audio(text, playInBackground=False)
-        for i in range(20):
-            print(f'generating {voice.voiceID} iteration {i+1}')
-            s = np.random.rand()
-            sb = np.random.rand()
-            data = voice.generate_audio_bytes(
-                prompt=text,
-                stability=s,
-                similarity_boost=sb
-            )
-            save_bytes_to_path(f"elvenlabs_samples/session5/{voice.voiceID}-{fname}-{i}-{s}-{sb}.wav", data)
-
-    # for historyItem in user.get_history_items():
-    #     if historyItem.text == text:
-    #         # The first items are the newest, so we can stop as soon as we find one.
-    #         historyItem.delete()
-    #         break
+        if 'new' in voice.initialName:
+            for i in range(5):
+                print(f'generating {voice.initialName}-{voice.voiceID} iteration {i+1}')
+                s = np.random.rand()
+                sb = np.random.rand()
+                data = voice.generate_audio_bytes(
+                    prompt=text,
+                    stability=s,
+                    similarity_boost=sb
+                )
+                save_bytes_to_path(f"elvenlabs_samples/session3-background/{voice.voiceID}-{fname}-{i}-{s}-{sb}.wav", data)
 
 def list_voices(language_code=None):
     client = tts.TextToSpeechClient()
@@ -110,11 +100,19 @@ def generate_heyditto_samples():
 #     text='Hey Ditto.', 
 #     fname='heyditto-period'
 # )
-gen_eleven_labs_sample(
-    text='Hey Ditto!', 
-    fname='heyditto-exclamation'
-)
-gen_eleven_labs_sample(
-    text='Hey Ditto...', 
-    fname='heyditto-dotdotdot'
-)
+# gen_eleven_labs_sample(
+#     text='Hey Ditto!', 
+#     fname='heyditto-exclamation'
+# )
+# gen_eleven_labs_sample(
+#     text='Hey Ditto...', 
+#     fname='heyditto-dotdotdot'
+# )
+
+# words = ["had it", "had to", "headed", "how dye do", "head to toe", "Hideo", "hadith", "had to", "hated", "hooded", "Hey Dad", "heeded"]
+words = ['hey Data', 'data', 'need data', 'dada', 'hey dude']
+for word in words:
+    gen_eleven_labs_sample(
+        text=word,
+        fname='background'
+    )

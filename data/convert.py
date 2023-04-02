@@ -23,10 +23,10 @@ import time
 #     stamp = int(time.time())+ndx+1
 #     os.system(f'ffmpeg -y -i "mp3_data/{file}" -ar 16000 "raw_data/heyditto-{stamp}-{file}.wav"')
 
-files = os.listdir('elvenlabs_samples/session5/')
-for ndx,file in enumerate(files):
-    stamp = int(time.time())+ndx+1
-    os.system(f'ffmpeg -y -i "elvenlabs_samples/session5/{file}" -ar 16000 "raw_data/heyditto-{stamp}-{file}.wav"')
+# files = os.listdir('elvenlabs_samples/session3-background/')
+# for ndx,file in enumerate(files):
+#     stamp = int(time.time())+ndx+1
+#     os.system(f'ffmpeg -y -i "elvenlabs_samples/session3-background/{file}" -ar 16000 "raw_data/background-{stamp}-{file}.wav"')
 
 # files = os.listdir('gtts_session3/')
 # for ndx,file in enumerate(files):

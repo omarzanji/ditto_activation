@@ -143,7 +143,7 @@ def generate_data() -> tuple:
 
         x.append(spect)
         y.append(0) 
-        N = 2000
+        N = 4000
         if count < N or\
                 'Neural' in background_noise or 'Wavenet' in background_noise or\
                 'Standard' in background_noise or 'News' in background_noise: # apply augmentations to N false samples 
