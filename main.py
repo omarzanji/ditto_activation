@@ -227,6 +227,7 @@ class HeyDittoNet:
         self.inject_prompt = False # set to true in check_for_request function to skip STT module
         self.gesture = "" # grabbed from gesture_recognition module
         self.gesture_activation = False # set to true in check_for_gesture function to skip wake using gesture
+        self.reset_conversation = False # set to true in check_for_request
         self.palm_count = 0 # used to filter false positives
         self.like_count = 0
         self.dislike_count = 0
@@ -344,6 +345,14 @@ class HeyDittoNet:
                 self.running = False
                 self.inject_prompt = True
                 self.activated = 1
+            if req[0] == "resetConversation":
+                print("\n[Reset conversation request received]\n")
+                cur.execute("DROP TABLE ditto_requests")
+                SQL.close()
+                self.running = False
+                self.reset_conversation = True
+                self.activated = 1
+
         except BaseException as e:
             pass
             # print(e)
