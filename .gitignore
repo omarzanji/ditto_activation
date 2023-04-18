@@ -10,3 +10,11 @@ common_voice_dataset/
 background_data/
 reinforced_data/
 elvenlabs_samples/
+
+# environment
+.vscode/
+*.env
+__pycache__
+
+# Mac
+*.DS_Store
