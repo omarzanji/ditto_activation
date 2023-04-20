@@ -1,3 +1,10 @@
+'''
+Hey Ditto net train / test / inference pipeline. 
+
+author: Omar Barazanji
+date: 2023
+'''
+
 import json
 import sqlite3
 import numpy as np
