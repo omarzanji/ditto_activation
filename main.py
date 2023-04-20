@@ -247,7 +247,7 @@ class HeyDittoNet:
         # print(sd.query_devices())
         print('\nidle...\n')
         self.start_time = time.time()
-        with sd.InputStream(device=0, samplerate=fs, dtype='float32', latency=None, channels=1, callback=self.callback) as stream:
+        with sd.InputStream(device=sd.default.device[0], samplerate=fs, dtype='float32', latency=None, channels=1, callback=self.callback) as stream:
             while True:
                 # self.q.get()
                 if not self.path=='':
