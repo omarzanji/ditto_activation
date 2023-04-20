@@ -267,11 +267,8 @@ class HeyDittoNet:
         self.start_time = time.time()
         with sd.InputStream(device=sd.default.device[0], samplerate=fs, dtype='float32', latency=None, channels=1, callback=self.callback) as stream:
             while True:
-                # self.q.get()
-                if not self.path == '':
-                    self.check_for_request()
-                    self.check_for_gesture()
-
+                self.check_for_request()
+                self.check_for_gesture()
                 if self.activated and reinforce:
                     with open(f'{self.path}data/reinforced_data/conf.json', 'r') as f:
                         conf = json.load(f)
