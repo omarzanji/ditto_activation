@@ -2,8 +2,11 @@ import tensorflow as tf
 
 print('\n[Converting Keras model to TFLite...]\n')
 
-model = tf.keras.models.load_model('models/HeyDittoNet_CNN-LSTM')
+# model = tf.keras.models.load_model('models/HeyDittoNet_CNN-LSTM')
+model = tf.keras.models.load_model('models/HeyDittoNet_CNN')
+
 converter = tf.lite.TFLiteConverter.from_keras_model(model)
+
 
 converter.target_spec.supported_ops = [
     tf.lite.OpsSet.TFLITE_BUILTINS,

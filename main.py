@@ -21,24 +21,26 @@ from tensorflow.keras import backend as K
 from matplotlib import pyplot as plt
 
 # import queue
-import time 
+import time
 import sounddevice as sd
 
 # supress tf
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-TRAIN = False
+TRAIN = True
 REINFORCE = False
 TFLITE = True
-MODEL_SELECT = 1 # 0 for CNN, 1 for CNN-LSTM
+MODEL_SELECT = 0  # 0 for CNN, 1 for CNN-LSTM
 MODEL = ['CNN', 'CNN-LSTM'][MODEL_SELECT]
 RATE = 16000
 SENSITIVITY = 0.99
+
 
 class HeyDittoNet:
     '''
     HeyDittoNet is a model for recognizing "Hey Ditto" from machine's default mic. 
     '''
+
     def __init__(self, train=False, model_type='CNN', tflite=False, path=''):
         # self.q = queue.Queue()
         self.train = train
@@ -54,7 +56,7 @@ class HeyDittoNet:
             plt.show()
         else:
             self.load_model()
-            
+
     def load_data(self):
         try:
             self.x = np.load('data/x_data.npy', allow_pickle=True)
@@ -69,7 +71,8 @@ class HeyDittoNet:
 
     def load_model(self):
         if not self.tflite:
-            self.model = keras.models.load_model(f'{self.path}models/HeyDittoNet_{self.model_type}')
+            self.model = keras.models.load_model(
+                f'{self.path}models/HeyDittoNet_{self.model_type}')
         else:
             # Load TFLite model and allocate tensors.
             with open(f'{self.path}models/model.tflite', 'rb') as f:
@@ -77,31 +80,34 @@ class HeyDittoNet:
             self.interpreter = tf.lite.Interpreter(model_content=self.model)
             self.interpreter.allocate_tensors()
             self.input_index = self.interpreter.get_input_details()[0]["index"]
-            self.output_index = self.interpreter.get_output_details()[0]["index"]
+            self.output_index = self.interpreter.get_output_details()[
+                0]["index"]
 
     def create_model(self):
         if self.model_type == 'CNN':
+            self.early_stop_callback = tf.keras.callbacks.EarlyStopping(
+                monitor='loss', patience=5)
             xshape = self.x.shape[1:]
             model = Sequential([
                 layers.Input(shape=xshape),
                 layers.Resizing(32, 32),
                 layers.Normalization(),
 
-                layers.Conv2D(32, (7,7), padding="same", activation="relu"),
+                layers.Conv2D(32, (5, 5), padding="same", activation="relu"),
                 layers.BatchNormalization(),
-                layers.MaxPooling2D(pool_size=(2,2)),
+                layers.MaxPooling2D(pool_size=(2, 2)),
 
-                layers.Conv2D(64, (5,5), padding="same", activation="relu"),
-                layers.BatchNormalization(),
-                layers.MaxPooling2D(pool_size=(2,2)),
+                # layers.Conv2D(64, (5, 5), padding="same", activation="relu"),
+                # layers.BatchNormalization(),
+                # layers.MaxPooling2D(pool_size=(2, 2)),
 
-                layers.Conv2D(128, (3,3), padding="same", activation="relu"),
-                layers.BatchNormalization(),
+                # layers.Conv2D(128, (3, 3), padding="same", activation="relu"),
+                # layers.BatchNormalization(),
                 # layers.MaxPooling2D(pool_size=(2,2)),
                 layers.Flatten(),
 
-                layers.Dense(256, activation='relu'),
-                layers.Dropout(0.3),
+                layers.Dense(16, activation='relu'),
+                # layers.Dropout(0.3),
 
                 # layers.Dense(512, activation='relu'),
                 # layers.Dropout(0.5),
@@ -109,52 +115,59 @@ class HeyDittoNet:
                 layers.Dense(1),
                 layers.Activation('sigmoid')
             ])
-            
-            model.compile(loss='binary_crossentropy', optimizer='adam', metrics='accuracy')
+
+            model.compile(loss='binary_crossentropy',
+                          optimizer='adam', metrics='accuracy')
             return model
         elif self.model_type == 'CNN-LSTM':
-            self.callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=3)
+            self.early_stop_callback = tf.keras.callbacks.EarlyStopping(
+                monitor='loss', patience=5)
             model = Sequential([
                 layers.Resizing(32, 32),
-                                
-                layers.Conv2D(32, (5,5), padding="same", activation="relu"),
+
+                # layers.Conv2D(32, (5, 5), padding="same", activation="relu"),
+                # layers.BatchNormalization(),
+                # layers.MaxPooling2D(pool_size=(2, 2)),
+
+                # layers.Conv2D(64, (5, 5), padding="same", activation="relu"),
+                # layers.BatchNormalization(),
+                # layers.MaxPooling2D(pool_size=(2, 2)),
+
+                layers.Conv2D(32, (5, 5), padding="same", activation="relu"),
                 layers.BatchNormalization(),
-                layers.MaxPooling2D(pool_size=(2,2)),
-                                               
-                layers.Conv2D(64, (5,5), padding="same", activation="relu"),
-                layers.BatchNormalization(),
-                layers.MaxPooling2D(pool_size=(2,2)),
-                                               
-                layers.Conv2D(128, (3,3), padding="same", activation="relu"),
-                layers.BatchNormalization(),
-                layers.MaxPooling2D(pool_size=(2,2)),
-                                               
+                layers.MaxPooling2D(pool_size=(2, 2)),
                 layers.TimeDistributed(layers.Flatten()),
                 layers.LSTM(8),
+                layers.Dense(16, activation='relu'),
                 # layers.Dropout(0.5),
                 layers.Dense(1),
                 layers.Activation('sigmoid')
             ])
-            model.compile(loss='binary_crossentropy', optimizer='adam', metrics='accuracy')
+            model.compile(loss='binary_crossentropy',
+                          optimizer='adam', metrics='accuracy')
             return model
 
     def train_model(self, model):
-        if self.model_type == 'CNN': 
-            epochs = 25
-            batch_size = 32
-        else: 
+        if self.model_type == 'CNN':
             epochs = 30
-            batch_size = 64
+            batch_size = 32
+        else:
+            epochs = 30
+            batch_size = 32
         name = f'HeyDittoNet_{self.model_type}'
-        xtrain, xtest, ytrain, ytest = train_test_split(self.x, self.y, train_size=0.9)
-        self.hist = model.fit(xtrain, ytrain, epochs=epochs, verbose=1, batch_size=batch_size, callbacks=[self.callback])
+        xtrain, xtest, ytrain, ytest = train_test_split(
+            self.x, self.y, train_size=0.9)
+        self.hist = model.fit(xtrain, ytrain, epochs=epochs, verbose=1,
+                              batch_size=batch_size, callbacks=[self.early_stop_callback])
         self.plot_history(self.hist)
         model.summary()
         ypreds = model.predict(xtest)
         self.ypreds = []
         for y in ypreds:
-            if y>=0.6: self.ypreds.append(1)
-            else: self.ypreds.append(0)
+            if y >= 0.6:
+                self.ypreds.append(1)
+            else:
+                self.ypreds.append(0)
         self.ypreds = np.array(self.ypreds)
         accuracy = accuracy_score(ytest, self.ypreds)
         print(f'\n\n[Accuracy: {accuracy}]\n\n')
@@ -175,30 +188,32 @@ class HeyDittoNet:
         indata = np.array(indata).flatten()
         for vals in indata:
             self.buffer.append(vals)
-        if len(self.buffer) >= RATE and self.frames==0:
-            self.frames+=frames
+        if len(self.buffer) >= RATE and self.frames == 0:
+            self.frames += frames
             self.buffer = self.buffer[-RATE:]
             spect = self.get_spectrogram(self.buffer)
-            if self.tflite: 
-                self.interpreter.set_tensor(self.input_index, np.expand_dims(spect, 0))
+            if self.tflite:
+                self.interpreter.set_tensor(
+                    self.input_index, np.expand_dims(spect, 0))
                 self.interpreter.invoke()
                 pred = self.interpreter.get_tensor(self.output_index)
-            else: pred = self.model(np.expand_dims(spect, 0))
+            else:
+                pred = self.model(np.expand_dims(spect, 0))
             K.clear_session()
-            if pred[0][0] >= SENSITIVITY: 
+            if pred[0][0] >= SENSITIVITY:
                 print(f'Activated with confidence: {pred[0][0]*100}%')
                 self.activated = 1
                 if self.reinforce:
                     self.train_data_x.append(spect)
                     self.train_data_y.append(0)
-            else: 
+            else:
                 # print(f'{pred[0][0]*100}%')
                 pass
         if self.frames > 0:
             self.frames += frames
             if self.frames >= RATE/4:
-                self.frames=0
-                    
+                self.frames = 0
+
     def get_spectrogram(self, waveform: list) -> list:
         '''
         Function for converting 16K Hz waveform to spectrogram.
@@ -228,14 +243,17 @@ class HeyDittoNet:
 
     def listen_for_name(self, reinforce=False):
         self.activated = 0
-        self.timeout = time.time() + 4 # 4 seconds (used for gesture recognition)
-        self.running = True # set to false to interrupt elsewhere (might remove this)
-        self.prompt = "" # used for GUI skip wake and skip STT (inject prompt)
-        self.inject_prompt = False # set to true in check_for_request function to skip STT module
-        self.gesture = "" # grabbed from gesture_recognition module
-        self.gesture_activation = False # set to true in check_for_gesture function to skip wake using gesture
-        self.reset_conversation = False # set to true in check_for_request
-        self.palm_count = 0 # used to filter false positives
+        self.timeout = time.time() + 4  # 4 seconds (used for gesture recognition)
+        # set to false to interrupt elsewhere (might remove this)
+        self.running = True
+        self.prompt = ""  # used for GUI skip wake and skip STT (inject prompt)
+        # set to true in check_for_request function to skip STT module
+        self.inject_prompt = False
+        self.gesture = ""  # grabbed from gesture_recognition module
+        # set to true in check_for_gesture function to skip wake using gesture
+        self.gesture_activation = False
+        self.reset_conversation = False  # set to true in check_for_request
+        self.palm_count = 0  # used to filter false positives
         self.like_count = 0
         self.dislike_count = 0
         fs = RATE
@@ -250,22 +268,25 @@ class HeyDittoNet:
         with sd.InputStream(device=sd.default.device[0], samplerate=fs, dtype='float32', latency=None, channels=1, callback=self.callback) as stream:
             while True:
                 # self.q.get()
-                if not self.path=='':
+                if not self.path == '':
                     self.check_for_request()
                     self.check_for_gesture()
-                
+
                 if self.activated and reinforce:
                     with open(f'{self.path}data/reinforced_data/conf.json', 'r') as f:
                         conf = json.load(f)
                         sesssion_number = conf['sessions_total']
                     print('saving to cache...')
-                    np.save(f'{self.path}data/reinforced_data/{sesssion_number}_train_data_x.npy', self.train_data_x)
-                    np.save(f'{self.path}data/reinforced_data/{sesssion_number}_train_data_y.npy', self.train_data_y)
+                    np.save(
+                        f'{self.path}data/reinforced_data/{sesssion_number}_train_data_x.npy', self.train_data_x)
+                    np.save(
+                        f'{self.path}data/reinforced_data/{sesssion_number}_train_data_y.npy', self.train_data_y)
                     with open(f'{self.path}data/reinforced_data/conf.json', 'w') as f:
                         conf['sessions_total'] = sesssion_number+1
                         json.dump(conf, f)
 
-                if self.activated or self.running==False: break
+                if self.activated or self.running == False:
+                    break
 
         return self.activated
 
@@ -292,19 +313,22 @@ class HeyDittoNet:
             dislike_gest = False
             palm_gest = False
             for i in req:
-                if 'like' in i: 
-                    like_gest=True
+                if 'like' in i:
+                    like_gest = True
                     print('like')
-                if 'dislike' in i: 
-                    dislike_gest=True
+                if 'dislike' in i:
+                    dislike_gest = True
                     print('dislike')
-                if 'palm' in i: 
+                if 'palm' in i:
                     print('palm')
-                    palm_gest=True
+                    palm_gest = True
             if like_gest or dislike_gest or palm_gest:
-                if like_gest: self.like_count += 1
-                if dislike_gest: self.dislike_count += 1
-                if palm_gest: self.palm_count += 1
+                if like_gest:
+                    self.like_count += 1
+                if dislike_gest:
+                    self.dislike_count += 1
+                if palm_gest:
+                    self.palm_count += 1
 
                 if self.like_count == 2:
                     reset_counts()
@@ -332,14 +356,15 @@ class HeyDittoNet:
         except BaseException as e:
             pass
             # print(e)
-        if self.gesture_activation: self.activated = 1
+        if self.gesture_activation:
+            self.activated = 1
 
     def check_for_request(self):
         ''' 
         Checks if the user sent a prompt from the client GUI.
         '''
         try:
-            
+
             SQL = sqlite3.connect(f'ditto.db')
             cur = SQL.cursor()
             req = cur.execute("select * from ditto_requests")
@@ -364,16 +389,19 @@ class HeyDittoNet:
             pass
             # print(e)
 
+
 if __name__ == "__main__":
 
     network = HeyDittoNet(
         train=TRAIN,
-        model_type='CNN-LSTM',
+        model_type=MODEL,
         tflite=TFLITE
     )
     if REINFORCE:
         while True:
             wake = network.listen_for_name(REINFORCE)
 
-    else: wake = network.listen_for_name()
-    if wake: print('name spoken!')
+    elif not TRAIN:
+        wake = network.listen_for_name()
+        if wake:
+            print('name spoken!')
