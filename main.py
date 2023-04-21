@@ -1,5 +1,5 @@
 '''
-Hey Ditto net train / test / inference pipeline. 
+Hey Ditto net train / test / inference pipeline.
 
 author: Omar Barazanji
 date: 2023
@@ -29,8 +29,8 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 TRAIN = False
 REINFORCE = False
-TFLITE = True
-MODEL_SELECT = 0  # 0 for CNN, 1 for CNN-LSTM
+TFLITE = False
+MODEL_SELECT = 1  # 0 for CNN, 1 for CNN-LSTM
 MODEL = ['CNN', 'CNN-LSTM'][MODEL_SELECT]
 RATE = 16000
 SENSITIVITY = 0.99
@@ -38,7 +38,7 @@ SENSITIVITY = 0.99
 
 class HeyDittoNet:
     '''
-    HeyDittoNet is a model for recognizing "Hey Ditto" from machine's default mic. 
+    HeyDittoNet is a model for recognizing "Hey Ditto" from machine's default mic.
     '''
 
     def __init__(self, train=False, model_type='CNN', tflite=False, path=''):
@@ -50,7 +50,6 @@ class HeyDittoNet:
         self.path = path
         if train:
             self.load_data()
-            # if model_type == 'CNN-LSTM': self.create_time_series()
             model = self.create_model()
             self.train_model(model)
             plt.show()
@@ -59,8 +58,12 @@ class HeyDittoNet:
 
     def load_data(self):
         try:
-            self.x = np.load('data/x_data.npy', allow_pickle=True)
-            self.y = np.load('data/y_data.npy', allow_pickle=True)
+            if MODEL == 'CNN-LSTM':
+                self.x = np.load('data/x_data_lstm.npy', allow_pickle=True)
+                self.y = np.load('data/y_data_lstm.npy', allow_pickle=True)
+            else:
+                self.x = np.load('data/x_data.npy', allow_pickle=True)
+                self.y = np.load('data/y_data.npy', allow_pickle=True)
             print('Found cached x and y...')
 
         except BaseException as e:
@@ -122,27 +125,34 @@ class HeyDittoNet:
         elif self.model_type == 'CNN-LSTM':
             self.early_stop_callback = tf.keras.callbacks.EarlyStopping(
                 monitor='loss', patience=5)
-            model = Sequential([
-                layers.Resizing(32, 32),
 
-                # layers.Conv2D(32, (5, 5), padding="same", activation="relu"),
-                # layers.BatchNormalization(),
-                # layers.MaxPooling2D(pool_size=(2, 2)),
+            N = 32
 
-                # layers.Conv2D(64, (5, 5), padding="same", activation="relu"),
-                # layers.BatchNormalization(),
-                # layers.MaxPooling2D(pool_size=(2, 2)),
+            conv_model = Sequential()
+            conv_model.add(layers.Resizing(32, 32))
+            conv_model.add(layers.Conv2D(
+                32, (5, 5), padding="same", activation="relu"))
+            conv_model.add(layers.BatchNormalization())
+            conv_model.add(layers.MaxPooling2D(pool_size=(2, 2)))
 
-                layers.Conv2D(32, (5, 5), padding="same", activation="relu"),
-                layers.BatchNormalization(),
-                layers.MaxPooling2D(pool_size=(2, 2)),
-                layers.TimeDistributed(layers.Flatten()),
-                layers.LSTM(8),
-                layers.Dense(16, activation='relu'),
-                # layers.Dropout(0.5),
-                layers.Dense(1),
-                layers.Activation('sigmoid')
-            ])
+            # conv_model.add(layers.Conv2D(
+            #     64, (3, 3), padding="same", activation="relu"))
+            # conv_model.add(layers.BatchNormalization())
+            # conv_model.add(layers.MaxPooling2D(pool_size=(2, 2)))
+            conv_model.add(layers.Flatten())
+            conv_model.add(layers.Dense(N, activation='relu'))
+
+            model = Sequential()
+
+            model.add(layers.TimeDistributed(conv_model, input_shape=(
+                self.x.shape[1], self.x.shape[2], self.x.shape[3], self.x.shape[4])))
+
+            model.add(layers.LSTM(16)),
+
+            model.add(layers.Dense(8, activation='relu'))
+            # model.add(layers.Dropout(0.5))
+            model.add(layers.Dense(1))
+            model.add(layers.Activation('sigmoid'))
             model.compile(loss='binary_crossentropy',
                           optimizer='adam', metrics='accuracy')
             return model
@@ -152,8 +162,8 @@ class HeyDittoNet:
             epochs = 30
             batch_size = 32
         else:
-            epochs = 30
-            batch_size = 32
+            epochs = 35
+            batch_size = 16
         name = f'HeyDittoNet_{self.model_type}'
         xtrain, xtest, ytrain, ytest = train_test_split(
             self.x, self.y, train_size=0.9)
@@ -191,11 +201,13 @@ class HeyDittoNet:
         if len(self.buffer) >= RATE and self.frames == 0:
             self.frames += frames
             self.buffer = self.buffer[-RATE:]
-            spect = self.get_spectrogram(self.buffer)
+            if self.model_type == 'CNN-LSTM':
+                spect = self.get_spectrograms(self.buffer)
+            else:
+                spect = self.get_spectrogram(self.buffer)
             if self.tflite:
                 self.interpreter.set_tensor(
                     self.input_index, np.expand_dims(spect, 0))
-                self.interpreter.invoke()
                 pred = self.interpreter.get_tensor(self.output_index)
             else:
                 pred = self.model(np.expand_dims(spect, 0))
@@ -240,6 +252,55 @@ class HeyDittoNet:
         # shape (`batch_size`, `height`, `width`, `channels`).
         spectrogram = spectrogram[..., tf.newaxis]
         return spectrogram
+
+    def get_spectrograms(self, waveform: list) -> list:
+        '''
+        Function for converting 16K Hz waveform to two half-second spectrograms for LSTM model.
+        ref: https://www.tensorflow.org/tutorials/audio/simple_audio
+        '''
+
+        import tensorflow as tf
+
+        # Zero-padding for an audio waveform with less than 16,000 samples.
+        input_len = RATE
+        waveform = waveform[:input_len]
+        waveform1 = waveform[:8000]  # 1st half second
+        waveform2 = waveform[8000:]  # 2nd half second
+
+        zero_padding1 = tf.zeros(
+            [RATE] - tf.shape(waveform1),
+            dtype=tf.float32)
+        zero_padding2 = tf.zeros(
+            [RATE] - tf.shape(waveform2),
+            dtype=tf.float32)
+        # Cast the waveform tensors' dtype to float32.
+        waveform1 = tf.cast(waveform1, dtype=tf.float32)
+        waveform2 = tf.cast(waveform2, dtype=tf.float32)
+        # Concatenate the waveform with `zero_padding`, which ensures all audio
+        # clips are of the same length.
+        equal_length1 = tf.concat([waveform1, zero_padding1], 0)
+        equal_length2 = tf.concat([waveform2, zero_padding2], 0)
+
+        # Convert the waveform to a spectrogram via a STFT.
+        spectrogram1 = tf.signal.stft(
+            equal_length1, frame_length=255, frame_step=128)
+        # Obtain the magnitude of the STFT.
+        spectrogram1 = tf.abs(spectrogram1)
+        # Add a `channels` dimension, so that the spectrogram can be used
+        # as image-like input data with convolution layers (which expect
+        # shape (`batch_size`, `height`, `width`, `channels`).
+        spectrogram1 = spectrogram1[..., tf.newaxis]
+
+        spectrogram2 = tf.signal.stft(
+            equal_length2, frame_length=255, frame_step=128)
+        # Obtain the magnitude of the STFT.
+        spectrogram2 = tf.abs(spectrogram2)
+        # Add a `channels` dimension, so that the spectrogram can be used
+        # as image-like input data with convolution layers (which expect
+        # shape (`batch_size`, `height`, `width`, `channels`).
+        spectrogram2 = spectrogram2[..., tf.newaxis]
+
+        return spectrogram1, spectrogram2
 
     def listen_for_name(self, reinforce=False):
         self.activated = 0
@@ -357,7 +418,7 @@ class HeyDittoNet:
             self.activated = 1
 
     def check_for_request(self):
-        ''' 
+        '''
         Checks if the user sent a prompt from the client GUI.
         '''
         try:
