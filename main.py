@@ -27,7 +27,7 @@ import sounddevice as sd
 # supress tf
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-TRAIN = True
+TRAIN = False
 REINFORCE = False
 TFLITE = False
 MODEL_SELECT = 1  # 0 for CNN, 1 for CNN-LSTM
