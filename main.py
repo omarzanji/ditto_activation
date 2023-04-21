@@ -27,7 +27,7 @@ import sounddevice as sd
 # supress tf
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-TRAIN = False
+TRAIN = True
 REINFORCE = False
 TFLITE = False
 MODEL_SELECT = 1  # 0 for CNN, 1 for CNN-LSTM
@@ -131,24 +131,24 @@ class HeyDittoNet:
             self.early_stop_callback = tf.keras.callbacks.EarlyStopping(
                 monitor='loss', patience=10, restore_best_weights=True)
 
-            N = 64
+            N = 32
 
             conv_model = Sequential()
             conv_model.add(layers.Resizing(32, 32))
             conv_model.add(layers.Conv2D(
-                32, (7, 7), strides=(5, 5), padding="same", activation="relu"))
+                16, (7, 7), strides=(5, 5), padding="same", activation="relu"))
             conv_model.add(layers.BatchNormalization())
             conv_model.add(layers.MaxPooling2D(pool_size=(2, 2)))
 
-            conv_model.add(layers.Conv2D(
-                64, (5, 5), strides=(4, 4), padding="same", activation="relu"))
-            conv_model.add(layers.BatchNormalization())
-            conv_model.add(layers.MaxPooling2D(
-                pool_size=(2, 2), padding='same'))
+            # conv_model.add(layers.Conv2D(
+            #     32, (5, 5), strides=(5, 5), padding="same", activation="relu"))
+            # conv_model.add(layers.BatchNormalization())
+            # conv_model.add(layers.MaxPooling2D(
+            #     pool_size=(2, 2), padding='same'))
 
-            conv_model.add(layers.Conv2D(
-                128, (3, 3), strides=(5, 5), padding="same", activation="relu"))
-            conv_model.add(layers.BatchNormalization())
+            # conv_model.add(layers.Conv2D(
+            #     64, (3, 3), strides=(5, 5), padding="same", activation="relu"))
+            # conv_model.add(layers.BatchNormalization())
             # conv_model.add(layers.MaxPooling2D(pool_size=(2, 2)))
 
             # conv_model.add(layers.Conv2D(
@@ -163,9 +163,9 @@ class HeyDittoNet:
             model.add(layers.TimeDistributed(conv_model, input_shape=(
                 self.x.shape[1], self.x.shape[2], self.x.shape[3], self.x.shape[4])))
 
-            model.add(layers.LSTM(4)),
+            model.add(layers.LSTM(8)),
 
-            model.add(layers.Dense(int(N/2), activation='relu'))
+            model.add(layers.Dense(int(N/4), activation='relu'))
             # model.add(layers.Dropout(0.5))
             model.add(layers.Dense(1))
             model.add(layers.Activation('sigmoid'))
