@@ -27,7 +27,7 @@ import sounddevice as sd
 # supress tf
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-TRAIN = True
+TRAIN = False
 REINFORCE = False
 TFLITE = False
 MODEL_SELECT = 1  # 0 for CNN, 1 for CNN-LSTM
@@ -41,7 +41,7 @@ class HeyDittoNet:
     HeyDittoNet is a model for recognizing "Hey Ditto" from machine's default mic.
     '''
 
-    def __init__(self, train=False, model_type='CNN', tflite=False, path=''):
+    def __init__(self, train=False, model_type='CNN-LSTM', tflite=False, path=''):
         # self.q = queue.Queue()
         self.train = train
         self.model_type = model_type
@@ -84,7 +84,7 @@ class HeyDittoNet:
             self.interpreter.allocate_tensors()
             self.input_index = self.interpreter.get_input_details()[0]["index"]
             # self.interpreter.resize_tensor_input(self.input_index, [2, 124, 129, 1])
-            # self.interpreter.allocate_tensors()
+            self.interpreter.allocate_tensors()
             # self.input_shape = self.interpreter.get_input_details()[0]["shape"]
             # print('\nTFLite Input Shape: ', str(
             #     tuple(self.input_shape)))
@@ -94,30 +94,35 @@ class HeyDittoNet:
     def create_model(self):
         if self.model_type == 'CNN':
             self.early_stop_callback = tf.keras.callbacks.EarlyStopping(
-                monitor='loss', patience=5)
+                monitor='loss', patience=3)
             xshape = self.x.shape[1:]
             model = Sequential([
                 layers.Input(shape=xshape),
                 layers.Resizing(32, 32),
                 layers.Normalization(),
 
-                layers.Conv2D(32, (5, 5), padding="same", activation="relu"),
+                layers.Conv2D(32, (5, 5), strides=(2, 2),
+                              padding="same", activation="relu"),
                 layers.BatchNormalization(),
                 layers.MaxPooling2D(pool_size=(2, 2)),
 
-                # layers.Conv2D(64, (5, 5), padding="same", activation="relu"),
-                # layers.BatchNormalization(),
+                layers.Conv2D(64, (5, 5), strides=(4, 4),
+                              padding="same", activation="relu"),
+                layers.BatchNormalization(),
+                layers.MaxPooling2D(pool_size=(2, 2), padding='same'),
+
+                layers.Conv2D(128, (3, 3), strides=(4, 4),
+                              padding="same", activation="relu"),
+                layers.BatchNormalization(),
                 # layers.MaxPooling2D(pool_size=(2, 2)),
-
-                # layers.Conv2D(128, (3, 3), padding="same", activation="relu"),
-                # layers.BatchNormalization(),
-                # layers.MaxPooling2D(pool_size=(2,2)),
                 layers.Flatten(),
+                layers.Dense(32, activation='relu'),
+                layers.Reshape((2, 16)),
 
-                layers.Dense(16, activation='relu'),
+                layers.LSTM(16, input_shape=(None, 2, 16), activation='relu'),
                 # layers.Dropout(0.3),
 
-                # layers.Dense(512, activation='relu'),
+                layers.Dense(32, activation='relu'),
                 # layers.Dropout(0.5),
 
                 layers.Dense(1),
@@ -135,20 +140,21 @@ class HeyDittoNet:
 
             conv_model = Sequential()
             conv_model.add(layers.Resizing(32, 32))
+            conv_model.add(layers.Normalization()),
             conv_model.add(layers.Conv2D(
-                16, (7, 7), strides=(5, 5), padding="same", activation="relu"))
+                32, (5, 5), strides=(2, 2), padding="same", activation="relu"))
             conv_model.add(layers.BatchNormalization())
             conv_model.add(layers.MaxPooling2D(pool_size=(2, 2)))
 
-            # conv_model.add(layers.Conv2D(
-            #     32, (5, 5), strides=(5, 5), padding="same", activation="relu"))
-            # conv_model.add(layers.BatchNormalization())
-            # conv_model.add(layers.MaxPooling2D(
-            #     pool_size=(2, 2), padding='same'))
+            conv_model.add(layers.Conv2D(
+                64, (5, 5), strides=(4, 4), padding="same", activation="relu"))
+            conv_model.add(layers.BatchNormalization())
+            conv_model.add(layers.MaxPooling2D(
+                pool_size=(2, 2), padding='same'))
 
-            # conv_model.add(layers.Conv2D(
-            #     64, (3, 3), strides=(5, 5), padding="same", activation="relu"))
-            # conv_model.add(layers.BatchNormalization())
+            conv_model.add(layers.Conv2D(
+                128, (3, 3), strides=(4, 4), padding="same", activation="relu"))
+            conv_model.add(layers.BatchNormalization())
             # conv_model.add(layers.MaxPooling2D(pool_size=(2, 2)))
 
             # conv_model.add(layers.Conv2D(
@@ -224,13 +230,15 @@ class HeyDittoNet:
             if self.tflite:
                 if self.model_type == 'CNN-LSTM':
                     self.interpreter.set_tensor(
-                        self.input_index, spect)
+                        self.input_index, np.expand_dims(spect, 0))
+                    self.interpreter.invoke()
                     # self.interpreter.set_tensor(
                     #     self.input_index, np.expand_dims(spect[1], 0))
                     pred = self.interpreter.get_tensor(self.output_index)
                 else:
                     self.interpreter.set_tensor(
                         self.input_index, np.expand_dims(spect, 0))
+                    self.interpreter.invoke()
                     pred = self.interpreter.get_tensor(self.output_index)
             else:
                 pred = self.model(np.expand_dims(spect, 0))
