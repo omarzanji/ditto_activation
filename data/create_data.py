@@ -127,6 +127,7 @@ def generate_data() -> tuple:
         if LSTM:
             spect = get_spectrograms(audio[0])
             x.append(spect)
+            return x
             y.append(1)  # activate
             x.append(get_spectrograms(audio_quiet))
             y.append(1)
@@ -332,4 +333,4 @@ def get_spectrogram(waveform: list) -> list:
 
 
 if __name__ == "__main__":
-    x, y = generate_data()
+    x = generate_data()

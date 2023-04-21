@@ -83,6 +83,11 @@ class HeyDittoNet:
             self.interpreter = tf.lite.Interpreter(model_content=self.model)
             self.interpreter.allocate_tensors()
             self.input_index = self.interpreter.get_input_details()[0]["index"]
+            # self.interpreter.resize_tensor_input(self.input_index, [2, 124, 129, 1])
+            # self.interpreter.allocate_tensors()
+            # self.input_shape = self.interpreter.get_input_details()[0]["shape"]
+            # print('\nTFLite Input Shape: ', str(
+            #     tuple(self.input_shape)))
             self.output_index = self.interpreter.get_output_details()[
                 0]["index"]
 
@@ -124,19 +129,30 @@ class HeyDittoNet:
             return model
         elif self.model_type == 'CNN-LSTM':
             self.early_stop_callback = tf.keras.callbacks.EarlyStopping(
-                monitor='loss', patience=4)
+                monitor='loss', patience=10, restore_best_weights=True)
 
-            N = 16
+            N = 64
 
             conv_model = Sequential()
             conv_model.add(layers.Resizing(32, 32))
             conv_model.add(layers.Conv2D(
-                32, (5, 5), padding="same", activation="relu"))
+                32, (7, 7), strides=(5, 5), padding="same", activation="relu"))
             conv_model.add(layers.BatchNormalization())
             conv_model.add(layers.MaxPooling2D(pool_size=(2, 2)))
 
+            conv_model.add(layers.Conv2D(
+                24, (5, 5), strides=(4, 4), padding="same", activation="relu"))
+            conv_model.add(layers.BatchNormalization())
+            conv_model.add(layers.MaxPooling2D(
+                pool_size=(2, 2), padding='same'))
+
+            conv_model.add(layers.Conv2D(
+                8, (3, 3), strides=(4, 4), padding="same", activation="relu"))
+            conv_model.add(layers.BatchNormalization())
+            # conv_model.add(layers.MaxPooling2D(pool_size=(2, 2)))
+
             # conv_model.add(layers.Conv2D(
-            #     64, (3, 3), padding="same", activation="relu"))
+            # 64, (3, 3), strides=(3, 3), padding="same", activation="relu"))
             # conv_model.add(layers.BatchNormalization())
             # conv_model.add(layers.MaxPooling2D(pool_size=(2, 2)))
             conv_model.add(layers.Flatten())
@@ -147,9 +163,9 @@ class HeyDittoNet:
             model.add(layers.TimeDistributed(conv_model, input_shape=(
                 self.x.shape[1], self.x.shape[2], self.x.shape[3], self.x.shape[4])))
 
-            model.add(layers.LSTM(8)),
+            model.add(layers.LSTM(4)),
 
-            model.add(layers.Dense(4, activation='relu'))
+            model.add(layers.Dense(int(N/2), activation='relu'))
             # model.add(layers.Dropout(0.5))
             model.add(layers.Dense(1))
             model.add(layers.Activation('sigmoid'))
@@ -162,8 +178,8 @@ class HeyDittoNet:
             epochs = 30
             batch_size = 32
         else:
-            epochs = 35
-            batch_size = 16
+            epochs = 100
+            batch_size = 64
         name = f'HeyDittoNet_{self.model_type}'
         xtrain, xtest, ytrain, ytest = train_test_split(
             self.x, self.y, train_size=0.9)
@@ -206,9 +222,16 @@ class HeyDittoNet:
             else:
                 spect = self.get_spectrogram(self.buffer)
             if self.tflite:
-                self.interpreter.set_tensor(
-                    self.input_index, np.expand_dims(spect, 0))
-                pred = self.interpreter.get_tensor(self.output_index)
+                if self.model_type == 'CNN-LSTM':
+                    self.interpreter.set_tensor(
+                        self.input_index, spect)
+                    # self.interpreter.set_tensor(
+                    #     self.input_index, np.expand_dims(spect[1], 0))
+                    pred = self.interpreter.get_tensor(self.output_index)
+                else:
+                    self.interpreter.set_tensor(
+                        self.input_index, np.expand_dims(spect, 0))
+                    pred = self.interpreter.get_tensor(self.output_index)
             else:
                 pred = self.model(np.expand_dims(spect, 0))
             K.clear_session()
