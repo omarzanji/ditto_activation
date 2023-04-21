@@ -141,13 +141,13 @@ class HeyDittoNet:
             conv_model.add(layers.MaxPooling2D(pool_size=(2, 2)))
 
             conv_model.add(layers.Conv2D(
-                24, (5, 5), strides=(4, 4), padding="same", activation="relu"))
+                64, (5, 5), strides=(4, 4), padding="same", activation="relu"))
             conv_model.add(layers.BatchNormalization())
             conv_model.add(layers.MaxPooling2D(
                 pool_size=(2, 2), padding='same'))
 
             conv_model.add(layers.Conv2D(
-                8, (3, 3), strides=(4, 4), padding="same", activation="relu"))
+                128, (3, 3), strides=(5, 5), padding="same", activation="relu"))
             conv_model.add(layers.BatchNormalization())
             # conv_model.add(layers.MaxPooling2D(pool_size=(2, 2)))
 
