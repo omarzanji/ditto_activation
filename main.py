@@ -27,7 +27,7 @@ import sounddevice as sd
 # supress tf
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-TRAIN = False
+TRAIN = True
 REINFORCE = False
 TFLITE = False
 MODEL_SELECT = 1  # 0 for CNN, 1 for CNN-LSTM
@@ -124,9 +124,9 @@ class HeyDittoNet:
             return model
         elif self.model_type == 'CNN-LSTM':
             self.early_stop_callback = tf.keras.callbacks.EarlyStopping(
-                monitor='loss', patience=5)
+                monitor='loss', patience=4)
 
-            N = 32
+            N = 16
 
             conv_model = Sequential()
             conv_model.add(layers.Resizing(32, 32))
@@ -147,9 +147,9 @@ class HeyDittoNet:
             model.add(layers.TimeDistributed(conv_model, input_shape=(
                 self.x.shape[1], self.x.shape[2], self.x.shape[3], self.x.shape[4])))
 
-            model.add(layers.LSTM(16)),
+            model.add(layers.LSTM(8)),
 
-            model.add(layers.Dense(8, activation='relu'))
+            model.add(layers.Dense(4, activation='relu'))
             # model.add(layers.Dropout(0.5))
             model.add(layers.Dense(1))
             model.add(layers.Activation('sigmoid'))
