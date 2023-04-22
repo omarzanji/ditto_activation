@@ -5,6 +5,7 @@ author: Omar Barazanji
 date: 2023
 '''
 
+import sys
 import json
 import sqlite3
 import numpy as np
@@ -30,10 +31,14 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 TRAIN = False
 REINFORCE = False
 TFLITE = True
-MODEL_SELECT = 0  # 0 for HeyDittoNet-v2, 1 for HeyDittoNet-v1
+MODEL_SELECT = 1  # 0 for HeyDittoNet-v2, 1 for HeyDittoNet-v1
 MODEL = ['HeyDittoNet-v1', 'HeyDittoNet-v2'][MODEL_SELECT]
 RATE = 16000
 SENSITIVITY = 0.99
+
+PATH = ''
+if sys.argv[1]:
+    PATH = sys.argv[1]
 
 
 class HeyDittoNet:
@@ -41,7 +46,7 @@ class HeyDittoNet:
     HeyDittoNet is a model for recognizing "Hey Ditto" from machine's default mic.
     '''
 
-    def __init__(self, train=False, model_type='HeyDittoNet-v1', tflite=False, path=''):
+    def __init__(self, train=False, model_type='HeyDittoNet-v2', tflite=True, path=PATH):
         # self.q = queue.Queue()
         self.train = train
         self.model_type = model_type
@@ -246,6 +251,7 @@ class HeyDittoNet:
             if pred[0][0] >= SENSITIVITY:
                 print(f'Activated with confidence: {pred[0][0]*100}%')
                 self.activated = 1
+                self.send_ditto_wake()
                 if self.reinforce:
                     self.train_data_x.append(spect)
                     self.train_data_y.append(0)
@@ -355,7 +361,7 @@ class HeyDittoNet:
         self.reinforce = reinforce
         self.frames = 0
         # print(sd.query_devices())
-        print('\nidle...\n')
+        # print('\nidle...\n')
         self.start_time = time.time()
         with sd.InputStream(device=sd.default.device[0], samplerate=fs, dtype='float32', latency=None, channels=1, callback=self.callback) as stream:
             while True:
@@ -374,8 +380,8 @@ class HeyDittoNet:
                         conf['sessions_total'] = sesssion_number+1
                         json.dump(conf, f)
 
-                if self.activated or self.running == False:
-                    break
+                # if self.activated or self.running == False:
+                #     break
 
         return self.activated
 
@@ -448,6 +454,17 @@ class HeyDittoNet:
         if self.gesture_activation:
             self.activated = 1
 
+    def send_ditto_wake(self):
+        SQL = sqlite3.connect(f'ditto.db')
+        cur = SQL.cursor()
+        cur.execute(
+            "CREATE TABLE IF NOT EXISTS ditto_requests(request VARCHAR, action VARCHAR)")
+        SQL.commit()
+        cur.execute(
+            "INSERT INTO ditto_requests VALUES('activation', 'activate')")
+        SQL.commit()
+        SQL.close()
+
     def check_for_request(self):
         '''
         Checks if the user sent a prompt from the client GUI.
@@ -491,6 +508,4 @@ if __name__ == "__main__":
             wake = network.listen_for_name(REINFORCE)
 
     elif not TRAIN:
-        wake = network.listen_for_name()
-        if wake:
-            print('name spoken!')
+        network.listen_for_name()
