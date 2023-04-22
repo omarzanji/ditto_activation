@@ -39,6 +39,7 @@ SENSITIVITY = 0.99
 PATH = ''
 if sys.argv[1]:
     PATH = sys.argv[1]
+    time.sleep(15)  # sleep to let server boot (used by Ditto Assistant)
 
 
 class HeyDittoNet:
