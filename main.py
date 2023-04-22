@@ -30,8 +30,8 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 TRAIN = False
 REINFORCE = False
 TFLITE = True
-MODEL_SELECT = 0  # 0 for CNN, 1 for CNN-LSTM
-MODEL = ['CNN', 'CNN-LSTM'][MODEL_SELECT]
+MODEL_SELECT = 0  # 0 for HeyDittoNet-v2, 1 for HeyDittoNet-v1
+MODEL = ['HeyDittoNet-v1', 'HeyDittoNet-v2'][MODEL_SELECT]
 RATE = 16000
 SENSITIVITY = 0.99
 
@@ -41,7 +41,7 @@ class HeyDittoNet:
     HeyDittoNet is a model for recognizing "Hey Ditto" from machine's default mic.
     '''
 
-    def __init__(self, train=False, model_type='CNN-LSTM', tflite=False, path=''):
+    def __init__(self, train=False, model_type='HeyDittoNet-v1', tflite=False, path=''):
         # self.q = queue.Queue()
         self.train = train
         self.model_type = model_type
@@ -58,7 +58,7 @@ class HeyDittoNet:
 
     def load_data(self):
         try:
-            if MODEL == 'CNN-LSTM':
+            if MODEL == 'HeyDittoNet-v1':
                 self.x = np.load('data/x_data_lstm.npy', allow_pickle=True)
                 self.y = np.load('data/y_data_lstm.npy', allow_pickle=True)
             else:
@@ -92,7 +92,7 @@ class HeyDittoNet:
                 0]["index"]
 
     def create_model(self):
-        if self.model_type == 'CNN':
+        if self.model_type == 'HeyDittoNet-v2':
             self.early_stop_callback = tf.keras.callbacks.EarlyStopping(
                 monitor='loss', patience=3)
             xshape = self.x.shape[1:]
@@ -119,7 +119,7 @@ class HeyDittoNet:
                 layers.Dense(32, activation='relu'),
                 layers.Reshape((2, 16)),
 
-                layers.LSTM(16, input_shape=(None, 2, 16), activation='relu'),
+                layers.LSTM(8, input_shape=(None, 2, 16), activation='relu'),
                 # layers.Dropout(0.3),
 
                 layers.Dense(32, activation='relu'),
@@ -132,7 +132,7 @@ class HeyDittoNet:
             model.compile(loss='binary_crossentropy',
                           optimizer='adam', metrics='accuracy')
             return model
-        elif self.model_type == 'CNN-LSTM':
+        elif self.model_type == 'HeyDittoNet-v1':
             self.early_stop_callback = tf.keras.callbacks.EarlyStopping(
                 monitor='loss', patience=10, restore_best_weights=True)
 
@@ -180,7 +180,7 @@ class HeyDittoNet:
             return model
 
     def train_model(self, model):
-        if self.model_type == 'CNN':
+        if self.model_type == 'HeyDittoNet-v2':
             epochs = 30
             batch_size = 32
         else:
@@ -223,12 +223,12 @@ class HeyDittoNet:
         if len(self.buffer) >= RATE and self.frames == 0:
             self.frames += frames
             self.buffer = self.buffer[-RATE:]
-            if self.model_type == 'CNN-LSTM':
+            if self.model_type == 'HeyDittoNet-v1':
                 spect = self.get_spectrograms(self.buffer)
             else:
                 spect = self.get_spectrogram(self.buffer)
             if self.tflite:
-                if self.model_type == 'CNN-LSTM':
+                if self.model_type == 'HeyDittoNet-v1':
                     self.interpreter.set_tensor(
                         self.input_index, np.expand_dims(spect, 0))
                     self.interpreter.invoke()
