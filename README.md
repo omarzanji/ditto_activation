@@ -8,7 +8,7 @@ Spoken "Hey Ditto" activation using CNN-LSTM model. Model trained on both synthe
 ## Model Architecture
 1. CNN-LSTM model architecture below with 99% testing accuracy on roughly 30,000 audio samples:
 
-![HeyDittoNet](images/HeyDittoNet_v2.png)
+![HeyDittoNet](images/HeyDittoNet.png)
 
 ## Training Metrics
 1. CNN-LSTM Training Loss:
