@@ -28,7 +28,7 @@ import sounddevice as sd
 # supress tf
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-TRAIN = False
+TRAIN = True
 REINFORCE = False
 TFLITE = True
 MODEL_SELECT = 1  # 0 for HeyDittoNet-v2, 1 for HeyDittoNet-v1
@@ -37,7 +37,7 @@ RATE = 16000
 SENSITIVITY = 0.99
 
 PATH = ''
-if sys.argv[1]:
+if len(sys.argv) > 2:
     PATH = sys.argv[1]
 
 
@@ -121,10 +121,10 @@ class HeyDittoNet:
                 layers.BatchNormalization(),
                 # layers.MaxPooling2D(pool_size=(2, 2)),
                 layers.Flatten(),
-                layers.Dense(32, activation='relu'),
-                layers.Reshape((2, 16)),
+                # layers.Dense(32, activation='relu'),
+                layers.Reshape((2, 64)),
 
-                layers.LSTM(8, input_shape=(None, 2, 16), activation='relu'),
+                layers.LSTM(8, input_shape=(None, 2, 64), activation='relu'),
                 # layers.Dropout(0.3),
 
                 layers.Dense(32, activation='relu'),
