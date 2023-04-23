@@ -60,6 +60,7 @@ class HeyDittoNet:
             self.train_model(model)
             plt.show()
         else:
+            self.retries = 0  # if can't connect to device
             self.load_model()
 
     def load_data(self):
@@ -275,6 +276,7 @@ class HeyDittoNet:
                         self.train_data_x.append(spect)
                         self.train_data_y.append(0)
             else:
+                time.sleep(0.001)
                 # print(f'{pred[0][0]*100}%')
                 pass
         if self.frames > 0:
@@ -378,6 +380,7 @@ class HeyDittoNet:
                             callback=self.callback,
                             blocksize=4000) as stream:
             try:
+                self.retries = 0
                 while True:
                     time.sleep(0.001)
                     if self.activated:
@@ -400,6 +403,10 @@ class HeyDittoNet:
             except KeyboardInterrupt:
                 stream.close()
                 return -1
+            except:
+                self.retries += 1
+                time.sleep(0.5)
+                return 0
 
     def send_ditto_wake(self):
         SQL = sqlite3.connect(f'ditto.db')
@@ -446,7 +453,7 @@ def check_for_idle():
         req = req.fetchone()
         if req[0] == 'idle':
             print('BACK TO IDLE')
-            cur.execute("DELETE FROM ditto_activation_requests")
+            cur.execute("DROP TABLE ditto_activation_requests")
             SQL.commit()
             SQL.close()
             return 1
