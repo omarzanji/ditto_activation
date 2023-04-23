@@ -28,7 +28,7 @@ import sounddevice as sd
 # supress tf
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-TRAIN = True
+TRAIN = False
 REINFORCE = False
 TFLITE = True
 MODEL_SELECT = 1  # 0 for HeyDittoNet-v2, 1 for HeyDittoNet-v1
@@ -37,7 +37,7 @@ RATE = 16000
 SENSITIVITY = 0.99
 
 PATH = ''
-if len(sys.argv) > 2:
+if len(sys.argv) >= 2:
     PATH = sys.argv[1]
 
 
@@ -53,6 +53,7 @@ class HeyDittoNet:
         self.tflite = tflite
         self.activated = 0
         self.path = path
+        print(f'\n\n {self.path}')
         if train:
             self.load_data()
             model = self.create_model()
