@@ -277,7 +277,6 @@ class HeyDittoNet:
                         self.train_data_x.append(spect)
                         self.train_data_y.append(0)
             else:
-                time.sleep(0.001)
                 # print(f'{pred[0][0]*100}%')
                 pass
         if self.frames > 0:
@@ -448,12 +447,12 @@ class HeyDittoNet:
 
                 elif wake == 1:
                     back_to_idle = False
-                    print('PAUSING ACTIVATION')
+                    # print('PAUSING ACTIVATION')
                     while not back_to_idle:
                         time.sleep(0.001)
                         back_to_idle = check_for_idle()
-                        if back_to_idle:
-                            print('RESUMING ACTIVATION')
+                        # if back_to_idle:
+                        # print('RESUMING ACTIVATION')
 
 
 def check_for_idle():
@@ -461,7 +460,8 @@ def check_for_idle():
     Checks if the user sent a prompt from the client GUI.
     '''
     try:
-
+        if PATH == '':
+            return 1
         SQL = sqlite3.connect(f'ditto.db')
         cur = SQL.cursor()
         req = cur.execute("select * from ditto_activation_requests")
