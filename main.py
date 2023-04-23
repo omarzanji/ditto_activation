@@ -25,6 +25,13 @@ from matplotlib import pyplot as plt
 import time
 import sounddevice as sd
 
+import pyaudio
+p = pyaudio.PyAudio()
+
+# print("Input Device id ", i, " - ",
+#       p.get_device_info_by_host_api_device_index(0, i))
+
+
 # supress tf
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
@@ -34,11 +41,26 @@ TFLITE = True
 MODEL_SELECT = 1  # 0 for HeyDittoNet-v2, 1 for HeyDittoNet-v1
 MODEL = ['HeyDittoNet-v1', 'HeyDittoNet-v2'][MODEL_SELECT]
 RATE = 16000
+CHUNK = 1024
 SENSITIVITY = 0.99
 
 PATH = ''
-if sys.argv[1]:
+DEVICE = ''
+DEVICE_ID = None
+if sys.argv[1]:  # get path if ran from another location
     PATH = sys.argv[1]
+if sys.argv[2]:  # get device name and id
+    DEVICE = sys.argv[2]
+    info = p.get_host_api_info_by_index(0)
+    numdevices = info.get('deviceCount')
+    for i in range(0, numdevices):
+        if (p.get_device_info_by_host_api_device_index(0, i).get('maxInputChannels')) > 0:
+            if DEVICE.lower() in str(p.get_device_info_by_host_api_device_index(0, i)).lower():
+                print(f'\nFound mic: {DEVICE}\n')
+                DEVICE_ID = i
+    if not DEVICE_ID:
+        print(f'\nSpecified mic {DEVICE} not found, using default device.\n')
+        DEVICE_ID = None
 
 
 class HeyDittoNet:
@@ -46,13 +68,13 @@ class HeyDittoNet:
     HeyDittoNet is a model for recognizing "Hey Ditto" from machine's default mic.
     '''
 
-    def __init__(self, train=False, model_type='HeyDittoNet-v2', tflite=True, path=PATH):
-        # self.q = queue.Queue()
+    def __init__(self, train=False, model_type='HeyDittoNet-v2', tflite=True, path=PATH, device_id=DEVICE_ID):
         self.train = train
         self.model_type = model_type
         self.tflite = tflite
-        self.activated = 0
+        self.device_id = device_id
         self.path = path
+        self.activated = 0
         if train:
             self.load_data()
             model = self.create_model()
@@ -222,8 +244,13 @@ class HeyDittoNet:
 
     def callback(self, indata, frames, time, status):
         # self.q.put(indata.copy())
-        indata = np.array(indata).flatten()
-        for vals in indata:
+        # indata_ = indata
+        # if indata:
+        #     indata_ = indata.copy()
+        # indata = np.array(indata).flatten()
+
+        indata = np.frombuffer(indata, dtype=np.int16)
+        for vals in indata.flatten():
             self.buffer.append(vals)
         if len(self.buffer) >= RATE and self.frames == 0:
             self.frames += frames
@@ -256,12 +283,14 @@ class HeyDittoNet:
                     self.train_data_x.append(spect)
                     self.train_data_y.append(0)
             else:
-                # print(f'{pred[0][0]*100}%')
+                # print(f'Activation confidence: {pred[0][0]*100}%')
                 pass
         if self.frames > 0:
             self.frames += frames
             if self.frames >= RATE/4:
                 self.frames = 0
+
+        return (None, pyaudio.paContinue)
 
     def get_spectrogram(self, waveform: list) -> list:
         '''
@@ -342,31 +371,29 @@ class HeyDittoNet:
     def listen_for_name(self, reinforce=False):
         self.activated = 0
         self.timeout = time.time() + 4  # 4 seconds (used for gesture recognition)
-        # set to false to interrupt elsewhere (might remove this)
         self.running = True
-        self.prompt = ""  # used for GUI skip wake and skip STT (inject prompt)
-        # set to true in check_for_request function to skip STT module
-        self.inject_prompt = False
-        self.gesture = ""  # grabbed from gesture_recognition module
-        # set to true in check_for_gesture function to skip wake using gesture
-        self.gesture_activation = False
-        self.reset_conversation = False  # set to true in check_for_request
-        self.palm_count = 0  # used to filter false positives
-        self.like_count = 0
-        self.dislike_count = 0
         fs = RATE
         self.buffer = []
         self.train_data_x = []
         self.train_data_y = []
         self.reinforce = reinforce
         self.frames = 0
-        # print(sd.query_devices())
         # print('\nidle...\n')
         self.start_time = time.time()
-        with sd.InputStream(device=sd.default.device[0], samplerate=fs, dtype='float32', latency=None, channels=1, callback=self.callback) as stream:
-            while True:
-                self.check_for_request()
-                self.check_for_gesture()
+        # with sd.InputStream(device=sd.default.device[0], samplerate=fs, dtype='float32', latency=None, channels=1, callback=self.callback) as stream:
+        stream = p.open(format=pyaudio.paInt16,
+                        channels=1,
+                        rate=fs,
+                        # output=True,
+                        input=True,
+                        frames_per_buffer=CHUNK,
+                        input_device_index=self.device_id,
+                        stream_callback=self.callback)
+
+        try:
+            stream.start_stream()
+            while stream.is_active():
+                # time.sleep(0.01)
                 if self.activated and reinforce:
                     with open(f'{self.path}data/reinforced_data/conf.json', 'r') as f:
                         conf = json.load(f)
@@ -379,80 +406,15 @@ class HeyDittoNet:
                     with open(f'{self.path}data/reinforced_data/conf.json', 'w') as f:
                         conf['sessions_total'] = sesssion_number+1
                         json.dump(conf, f)
-
-                # if self.activated or self.running == False:
-                #     break
-
-        return self.activated
-
-    def check_for_gesture(self):
-        '''
-        Checks for gesture to skip wake.
-        '''
-        def reset_counts():
-            self.like_count = 0
-            self.dislike_count = 0
-            self.palm_count = 0
-
-        if time.time() > self.timeout:
-            # print('gesture check timeout')
-            self.timeout = time.time() + 4
-            # reset gesture counters
-            reset_counts()
-        try:
-            SQL = sqlite3.connect(f'ditto.db')
-            cur = SQL.cursor()
-            req = cur.execute("select * from gestures")
-            req = req.fetchall()
-            like_gest = False
-            dislike_gest = False
-            palm_gest = False
-            for i in req:
-                if 'like' in i:
-                    like_gest = True
-                    print('like')
-                if 'dislike' in i:
-                    dislike_gest = True
-                    print('dislike')
-                if 'palm' in i:
-                    print('palm')
-                    palm_gest = True
-            if like_gest or dislike_gest or palm_gest:
-                if like_gest:
-                    self.like_count += 1
-                if dislike_gest:
-                    self.dislike_count += 1
-                if palm_gest:
-                    self.palm_count += 1
-
-                if self.like_count == 2:
-                    reset_counts()
-                    print("\n[Activated from Like Gesture]\n")
-                    self.running = False
-                    self.gesture_activation = True
-                    self.gesture = 'like'
-
-                if self.dislike_count == 2:
-                    reset_counts()
-                    print("\n[Activated from Dislike Gesture]\n")
-                    self.running = False
-                    self.gesture_activation = True
-                    self.gesture = 'dislike'
-
-                if self.palm_count == 2:
-                    reset_counts()
-                    print("\n[Activated from Palm Gesture]\n")
-                    self.running = False
-                    self.gesture_activation = True
-                    self.gesture = 'palm'
-            cur.execute("DELETE FROM gestures")
-            SQL.commit()
-            SQL.close()
-        except BaseException as e:
-            pass
-            # print(e)
-        if self.gesture_activation:
-            self.activated = 1
+                    return 1
+                if self.activated and self.path == '':
+                    stream.stop_stream()
+                    return 1
+        except KeyboardInterrupt:
+            # stop Recording
+            stream.stop_stream()
+            stream.close()
+            p.terminate()
 
     def send_ditto_wake(self):
         SQL = sqlite3.connect(f'ditto.db')
@@ -464,36 +426,6 @@ class HeyDittoNet:
             "INSERT INTO ditto_requests VALUES('activation', 'activate')")
         SQL.commit()
         SQL.close()
-
-    def check_for_request(self):
-        '''
-        Checks if the user sent a prompt from the client GUI.
-        '''
-        try:
-
-            SQL = sqlite3.connect(f'ditto.db')
-            cur = SQL.cursor()
-            req = cur.execute("select * from ditto_requests")
-            req = req.fetchone()
-            if req[0] == "prompt":
-                self.prompt = req[1]
-                print("\n[GUI prompt received]\n")
-                cur.execute("DROP TABLE ditto_requests")
-                SQL.close()
-                self.running = False
-                self.inject_prompt = True
-                self.activated = 1
-            if req[0] == "resetConversation":
-                print("\n[Reset conversation request received]\n")
-                cur.execute("DROP TABLE ditto_requests")
-                SQL.close()
-                self.running = False
-                self.reset_conversation = True
-                self.activated = 1
-
-        except BaseException as e:
-            pass
-            # print(e)
 
 
 if __name__ == "__main__":
