@@ -5,6 +5,7 @@ author: Omar Barazanji
 date: 2023
 '''
 
+import platform
 import sys
 import json
 import sqlite3
@@ -372,7 +373,11 @@ class HeyDittoNet:
         self.frames = 0
         self.activation_time = None
         self.start_time = time.time()
-        with sd.InputStream(device=sd.default.device[0],
+        if 'linux' in platform.platform().lower():
+            device_id = 1
+        else:
+            device_id = sd.default.device[0]
+        with sd.InputStream(device=device_id,
                             samplerate=fs,
                             dtype='float32',
                             latency='low',
@@ -428,17 +433,26 @@ class HeyDittoNet:
 
         elif not self.train:
             while True:
+
                 wake = self.listen_for_name()
+
+                if wake == 0:
+                    if self.retries >= 10:
+                        break
+                    else:
+                        self.retries += 1
+
                 if wake == -1:
                     break
+
                 elif wake == 1:
                     back_to_idle = False
                     print('PAUSING ACTIVATION')
-                while not back_to_idle:
-                    time.sleep(0.001)
-                    back_to_idle = check_for_idle()
-                    if back_to_idle:
-                        print('RESUMING ACTIVATION')
+                    while not back_to_idle:
+                        time.sleep(0.001)
+                        back_to_idle = check_for_idle()
+                        if back_to_idle:
+                            print('RESUMING ACTIVATION')
 
 
 def check_for_idle():
