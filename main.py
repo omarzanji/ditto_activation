@@ -220,7 +220,7 @@ class HeyDittoNet:
         plt.xlabel('epoch')
         plt.legend(['training loss'], loc='upper right')
 
-    def callback(self, indata, frames, time, status):
+    def callback(self, indata, frames, time_, status):
         # self.q.put(indata.copy())
         indata = np.array(indata).flatten()
         for vals in indata:
@@ -249,12 +249,30 @@ class HeyDittoNet:
                 pred = self.model(np.expand_dims(spect, 0))
             K.clear_session()
             if pred[0][0] >= SENSITIVITY:
-                print(f'Activated with confidence: {pred[0][0]*100}%')
-                self.activated = 1
-                self.send_ditto_wake()
-                if self.reinforce:
-                    self.train_data_x.append(spect)
-                    self.train_data_y.append(0)
+                if self.activation_time:
+
+                    # if prev activation and current are 2 seconds apart (filter double triggers)
+                    if int(time.time()) - self.activation_time > 2:
+                        print(f'Activated with confidence: {pred[0][0]*100}%')
+                        self.activated = 1
+                        # log new activation time
+                        self.activation_time = int(time.time())
+                        self.send_ditto_wake()  # send wake to database to start wake sequence in Ditto Assistant
+                        if self.reinforce:
+                            self.train_data_x.append(spect)
+                            self.train_data_y.append(0)
+                    else:
+                        pass  # do nothing on double triggers..
+
+                else:  # first activation from boot, always allow
+                    print(f'Activated with confidence: {pred[0][0]*100}%')
+                    self.activated = 1
+                    # log first activation time
+                    self.activation_time = int(time.time())
+                    self.send_ditto_wake()
+                    if self.reinforce:
+                        self.train_data_x.append(spect)
+                        self.train_data_y.append(0)
             else:
                 # print(f'{pred[0][0]*100}%')
                 pass
@@ -360,10 +378,11 @@ class HeyDittoNet:
         self.train_data_y = []
         self.reinforce = reinforce
         self.frames = 0
+        self.activation_time = None
         # print(sd.query_devices())
         # print('\nidle...\n')
         self.start_time = time.time()
-        with sd.InputStream(device=sd.default.device[0], samplerate=fs, dtype='float32', latency=None, channels=1, callback=self.callback) as stream:
+        with sd.InputStream(device=sd.default.device[0], samplerate=fs, dtype='float32', latency=None, channels=1, callback=self.callback, blocksize=1024) as stream:
             while True:
                 self.check_for_request()
                 self.check_for_gesture()
