@@ -28,7 +28,7 @@ import sounddevice as sd
 # supress tf
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-TRAIN = False
+TRAIN = True
 REINFORCE = False
 TFLITE = True
 MODEL_SELECT = 1  # 0 for HeyDittoNet-v2, 1 for HeyDittoNet-v1
@@ -99,7 +99,7 @@ class HeyDittoNet:
     def create_model(self):
         if self.model_type == 'HeyDittoNet-v2':
             self.early_stop_callback = tf.keras.callbacks.EarlyStopping(
-                monitor='loss', patience=3)
+                monitor='loss', patience=3, restore_best_weights=True)
             xshape = self.x.shape[1:]
             model = Sequential([
                 layers.Input(shape=xshape),
@@ -120,7 +120,7 @@ class HeyDittoNet:
                               padding="same", activation="relu"),
                 layers.BatchNormalization(),
                 # layers.MaxPooling2D(pool_size=(2, 2)),
-                layers.Flatten(),
+                # layers.Flatten(),
                 # layers.Dense(32, activation='relu'),
                 layers.Reshape((2, 64)),
 
@@ -186,12 +186,12 @@ class HeyDittoNet:
 
     def train_model(self, model):
         if self.model_type == 'HeyDittoNet-v2':
-            epochs = 30
+            epochs = 100
             batch_size = 32
         else:
             epochs = 100
             batch_size = 64
-        name = f'HeyDittoNet_{self.model_type}'
+        name = f'{self.model_type}'
         xtrain, xtest, ytrain, ytest = train_test_split(
             self.x, self.y, train_size=0.9)
         self.hist = model.fit(xtrain, ytrain, epochs=epochs, verbose=1,
