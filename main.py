@@ -46,13 +46,14 @@ class HeyDittoNet:
     HeyDittoNet is a model for recognizing "Hey Ditto" from machine's default mic.
     '''
 
-    def __init__(self, train=False, model_type='HeyDittoNet-v2', tflite=True, path=PATH):
+    def __init__(self, train=False, model_type='HeyDittoNet-v2', tflite=True, path=PATH, reinforce=REINFORCE):
         # self.q = queue.Queue()
         self.train = train
         self.model_type = model_type
         self.tflite = tflite
         self.activated = 0
         self.path = path
+        self.reinforce = reinforce
         if train:
             self.load_data()
             model = self.create_model()
@@ -372,13 +373,16 @@ class HeyDittoNet:
         with sd.InputStream(device=sd.default.device[0],
                             samplerate=fs,
                             dtype='float32',
-                            latency=None,
+                            latency='low',
                             channels=1,
                             callback=self.callback,
-                            blocksize=1024) as stream:
+                            blocksize=4000) as stream:
             try:
                 while True:
                     time.sleep(0.001)
+                    if self.activated:
+                        stream.close()
+                        return 1
                     if self.activated and reinforce:
                         with open(f'{self.path}data/reinforced_data/conf.json', 'r') as f:
                             conf = json.load(f)
@@ -391,10 +395,11 @@ class HeyDittoNet:
                         with open(f'{self.path}data/reinforced_data/conf.json', 'w') as f:
                             conf['sessions_total'] = sesssion_number+1
                             json.dump(conf, f)
+                        stream.close()
                         return 1
             except KeyboardInterrupt:
                 stream.close()
-                exit()
+                return -1
 
     def send_ditto_wake(self):
         SQL = sqlite3.connect(f'ditto.db')
@@ -407,17 +412,57 @@ class HeyDittoNet:
         SQL.commit()
         SQL.close()
 
+    def main_loop(self):
+        if self.reinforce:
+            while True:
+                wake = self.listen_for_name(self.reinforce)
+                if wake == -1:
+                    break
+
+        elif not self.train:
+            while True:
+                wake = self.listen_for_name()
+                if wake == -1:
+                    break
+                elif wake == 1:
+                    back_to_idle = False
+                    print('PAUSING ACTIVATION')
+                while not back_to_idle:
+                    time.sleep(0.001)
+                    back_to_idle = check_for_idle()
+                    if back_to_idle:
+                        print('RESUMING ACTIVATION')
+
+
+def check_for_idle():
+    '''
+    Checks if the user sent a prompt from the client GUI.
+    '''
+    try:
+
+        SQL = sqlite3.connect(f'ditto.db')
+        cur = SQL.cursor()
+        req = cur.execute("select * from ditto_activation_requests")
+        req = req.fetchone()
+        if req[0] == 'idle':
+            print('BACK TO IDLE')
+            cur.execute("DELETE FROM ditto_activation_requests")
+            SQL.commit()
+            SQL.close()
+            return 1
+        return 0
+    except BaseException as e:
+        pass
+        # print(e)
+        return 0
+
 
 if __name__ == "__main__":
 
     network = HeyDittoNet(
         train=TRAIN,
         model_type=MODEL,
-        tflite=TFLITE
+        tflite=TFLITE,
+        reinforce=REINFORCE
     )
-    if REINFORCE:
-        while True:
-            wake = network.listen_for_name(REINFORCE)
-
-    elif not TRAIN:
-        network.listen_for_name()
+    network.main_loop()
