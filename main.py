@@ -377,14 +377,15 @@ class HeyDittoNet:
             device_id = 1
         else:
             device_id = sd.default.device[0]
-        with sd.InputStream(device=device_id,
-                            samplerate=fs,
-                            dtype='float32',
-                            latency='low',
-                            channels=1,
-                            callback=self.callback,
-                            blocksize=4000) as stream:
-            try:
+        try:
+            with sd.InputStream(device=device_id,
+                                samplerate=fs,
+                                dtype='float32',
+                                latency='low',
+                                channels=1,
+                                callback=self.callback,
+                                blocksize=4000) as stream:
+
                 self.retries = 0
                 while True:
                     time.sleep(0.001)
@@ -405,13 +406,13 @@ class HeyDittoNet:
                             json.dump(conf, f)
                         stream.close()
                         return 1
-            except KeyboardInterrupt:
-                stream.close()
-                return -1
-            except:
-                self.retries += 1
-                time.sleep(0.5)
-                return 0
+        except KeyboardInterrupt:
+            stream.close()
+            return -1
+        except:
+            self.retries += 1
+            time.sleep(0.5)
+            return 0
 
     def send_ditto_wake(self):
         SQL = sqlite3.connect(f'ditto.db')
