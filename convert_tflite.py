@@ -3,7 +3,7 @@ import tensorflow as tf
 print('\n[Converting Keras model to TFLite...]\n')
 
 # model = tf.keras.models.load_model('models/HeyDittoNet_CNN-LSTM')
-model = tf.keras.models.load_model('models/HeyDittoNet_CNN')
+model = tf.keras.models.load_model('models/HeyDittoNet-v2')
 
 converter = tf.lite.TFLiteConverter.from_keras_model(model)
 

@@ -80,7 +80,7 @@ class HeyDittoNet:
     def load_model(self):
         if not self.tflite:
             self.model = keras.models.load_model(
-                f'{self.path}models/HeyDittoNet_{self.model_type}')
+                f'{self.path}models/{self.model_type}')
         else:
             # Load TFLite model and allocate tensors.
             with open(f'{self.path}models/model.tflite', 'rb') as f:
