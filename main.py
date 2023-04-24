@@ -277,6 +277,7 @@ class HeyDittoNet:
                         self.train_data_x.append(spect)
                         self.train_data_y.append(0)
             else:
+                time.sleep(0.001)
                 # print(f'{pred[0][0]*100}%')
                 pass
         if self.frames > 0:
