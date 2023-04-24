@@ -37,18 +37,13 @@ MODEL = ['HeyDittoNet-v1', 'HeyDittoNet-v2'][MODEL_SELECT]
 RATE = 16000
 SENSITIVITY = 0.99
 
-PATH = ''
-if len(sys.argv) >= 2:
-    PATH = sys.argv[1]
-
 
 class HeyDittoNet:
     '''
     HeyDittoNet is a model for recognizing "Hey Ditto" from machine's default mic.
     '''
 
-    def __init__(self, train=False, model_type='HeyDittoNet-v2', tflite=True, path=PATH, reinforce=REINFORCE):
-        # self.q = queue.Queue()
+    def __init__(self, train=False, model_type='HeyDittoNet-v2', tflite=True, path='', reinforce=REINFORCE):
         self.train = train
         self.model_type = model_type
         self.tflite = tflite
@@ -272,7 +267,6 @@ class HeyDittoNet:
                     self.activated = 1
                     # log first activation time
                     self.activation_time = int(time.time())
-                    self.send_ditto_wake()
                     if self.reinforce:
                         self.train_data_x.append(spect)
                         self.train_data_y.append(0)
@@ -361,22 +355,33 @@ class HeyDittoNet:
 
         return spectrogram1, spectrogram2
 
-    def listen_for_name(self, reinforce=False):
+    def listen_for_name(self):
         self.activated = 0
         self.timeout = time.time() + 4  # 4 seconds (used for gesture recognition)
         self.running = True
         fs = RATE
+        self.prompt = ""  # used for GUI skip wake and skip STT (inject prompt)
+        # set to true in check_for_request function to skip STT module
+        self.inject_prompt = False
+        self.gesture = ""  # grabbed from gesture_recognition module
+        # set to true in check_for_gesture function to skip wake using gesture
+        self.gesture_activation = False
+        self.reset_conversation = False  # set to true in check_for_request
+        self.palm_count = 0  # used to filter false positives
+        self.like_count = 0
+        self.dislike_count = 0
         self.buffer = []
         self.train_data_x = []
         self.train_data_y = []
-        self.reinforce = reinforce
         self.frames = 0
         self.activation_time = None
         self.start_time = time.time()
+        print('\nidle...\n')
         if 'linux' in platform.platform().lower():
             device_id = 1
         else:
             device_id = sd.default.device[0]
+
         try:
             with sd.InputStream(device=device_id,
                                 samplerate=fs,
@@ -385,14 +390,13 @@ class HeyDittoNet:
                                 channels=1,
                                 callback=self.callback,
                                 blocksize=4000) as stream:
-
-                self.retries = 0
                 while True:
-                    time.sleep(0.001)
+                    self.check_for_gesture()
+                    self.check_for_request()
                     if self.activated:
                         stream.close()
                         return 1
-                    if self.activated and reinforce:
+                    if self.activated and self.reinforce:
                         with open(f'{self.path}data/reinforced_data/conf.json', 'r') as f:
                             conf = json.load(f)
                             sesssion_number = conf['sessions_total']
@@ -409,21 +413,114 @@ class HeyDittoNet:
         except KeyboardInterrupt:
             stream.close()
             return -1
-        except:
-            self.retries += 1
-            time.sleep(0.5)
-            return 0
+        except BaseException as e:
+            print(e)
+            stream.close()
+            return -1
 
-    def send_ditto_wake(self):
-        SQL = sqlite3.connect(f'ditto.db')
-        cur = SQL.cursor()
-        cur.execute(
-            "CREATE TABLE IF NOT EXISTS ditto_requests(request VARCHAR, action VARCHAR)")
-        SQL.commit()
-        cur.execute(
-            "INSERT INTO ditto_requests VALUES('activation', 'activate')")
-        SQL.commit()
-        SQL.close()
+    def check_for_gesture(self):
+        '''
+        Checks for gesture to skip wake.
+        '''
+        def reset_counts():
+            self.like_count = 0
+            self.dislike_count = 0
+            self.palm_count = 0
+
+        if time.time() > self.timeout:
+            # print('gesture check timeout')
+            self.timeout = time.time() + 4
+            # reset gesture counters
+            reset_counts()
+        try:
+            SQL = sqlite3.connect(f'ditto.db')
+            cur = SQL.cursor()
+            req = cur.execute("select * from gestures")
+            req = req.fetchall()
+            like_gest = False
+            dislike_gest = False
+            palm_gest = False
+            for i in req:
+                if 'like' in i:
+                    like_gest = True
+                    print('like')
+                if 'dislike' in i:
+                    dislike_gest = True
+                    print('dislike')
+                if 'palm' in i:
+                    print('palm')
+                    palm_gest = True
+            if like_gest or dislike_gest or palm_gest:
+                if like_gest:
+                    self.like_count += 1
+                if dislike_gest:
+                    self.dislike_count += 1
+                if palm_gest:
+                    self.palm_count += 1
+
+                if self.like_count == 2:
+                    reset_counts()
+                    print("\n[Activated from Like Gesture]\n")
+                    self.running = False
+                    self.gesture_activation = True
+                    self.gesture = 'like'
+
+                if self.dislike_count == 2:
+                    reset_counts()
+                    print("\n[Activated from Dislike Gesture]\n")
+                    self.running = False
+                    self.gesture_activation = True
+                    self.gesture = 'dislike'
+
+                if self.palm_count == 2:
+                    reset_counts()
+                    print("\n[Activated from Palm Gesture]\n")
+                    self.running = False
+                    self.gesture_activation = True
+                    self.gesture = 'palm'
+            cur.execute("DELETE FROM gestures")
+            SQL.commit()
+            SQL.close()
+        except BaseException as e:
+            pass
+            # print(e)
+        if self.gesture_activation:
+            self.activated = 1
+
+    def check_for_request(self):
+        '''
+        Checks if the user sent a prompt from the client GUI.
+        '''
+        try:
+
+            SQL = sqlite3.connect(f'ditto.db')
+            cur = SQL.cursor()
+            req = cur.execute("select * from ditto_requests")
+            req = req.fetchone()
+            if req[0] == "prompt":
+                self.prompt = req[1]
+                print("\n[GUI prompt received]\n")
+                cur.execute("DROP TABLE ditto_requests")
+                SQL.close()
+                self.running = False
+                self.inject_prompt = True
+                self.activated = 1
+            if req[0] == "resetConversation":
+                print("\n[Reset conversation request received]\n")
+                cur.execute("DROP TABLE ditto_requests")
+                SQL.close()
+                self.running = False
+                self.reset_conversation = True
+                self.activated = 1
+            if req[0] == "activation":
+                print("\n[Ditto activation request received]\n")
+                cur.execute("DROP TABLE ditto_requests")
+                SQL.close()
+                self.running = False
+                self.activated = 1
+
+        except BaseException as e:
+            pass
 
     def main_loop(self):
         if self.reinforce:
@@ -433,51 +530,7 @@ class HeyDittoNet:
                     break
 
         elif not self.train:
-            while True:
-
-                wake = self.listen_for_name()
-
-                if wake == 0:
-                    if self.retries >= 10:
-                        break
-                    else:
-                        self.retries += 1
-
-                if wake == -1:
-                    break
-
-                elif wake == 1:
-                    back_to_idle = False
-                    # print('PAUSING ACTIVATION')
-                    while not back_to_idle:
-                        time.sleep(0.001)
-                        back_to_idle = check_for_idle()
-                        # if back_to_idle:
-                        # print('RESUMING ACTIVATION')
-
-
-def check_for_idle():
-    '''
-    Checks if the user sent a prompt from the client GUI.
-    '''
-    try:
-        if PATH == '':
-            return 1
-        SQL = sqlite3.connect(f'ditto.db')
-        cur = SQL.cursor()
-        req = cur.execute("select * from ditto_activation_requests")
-        req = req.fetchone()
-        if req[0] == 'idle':
-            print('BACK TO IDLE')
-            cur.execute("DROP TABLE ditto_activation_requests")
-            SQL.commit()
-            SQL.close()
-            return 1
-        return 0
-    except BaseException as e:
-        pass
-        # print(e)
-        return 0
+            wake = self.listen_for_name()
 
 
 if __name__ == "__main__":
