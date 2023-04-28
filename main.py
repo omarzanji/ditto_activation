@@ -386,8 +386,10 @@ class HeyDittoNet:
         elif self.path == '':
             from activation_requests import ActivationRequests
         self.activation_requests = ActivationRequests()
-
-        print('\nidle...\n')
+        if self.activation_requests.mic_on:
+            print('\nidle...\n')
+        else:
+            print('\nmic muted...\n')
 
         if 'linux' in platform.platform().lower():
             device_id = 1

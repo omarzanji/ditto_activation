@@ -20,7 +20,34 @@ class ActivationRequests:
         self.like_count = 0
         self.dislike_count = 0
         self.start_time = time.time()
-        self.mic_on = True
+        self.mic_on = self.get_activation_mic_status()
+
+    def get_activation_mic_status(self):
+        mic_status = True  # on by default
+        try:
+            SQL = sqlite3.connect(f'ditto.db')
+            cur = SQL.cursor()
+            cur.execute(
+                "CREATE TABLE IF NOT EXISTS ditto_status_table(element VARCHAR, status VARCHAR)")
+            SQL.commit()
+
+            req = cur.execute("select * from ditto_status_table")
+            req = req.fetchall()
+            if not req == []:
+                for status in req:
+                    if 'activation_mic' in status:
+                        mic_status = status[1]
+                        if 'on' in str(mic_status):
+                            mic_status = True
+                        elif 'off' in str(mic_status):
+                            mic_status = False
+            modes = ['off', 'on']
+            print(f'\nMic status: {modes[int(mic_status)]}')
+        except BaseException as e:
+            print('Error below from get_activation_mic_status:')
+            print(e)
+            return mic_status
+        return mic_status
 
     def set_activation_mic_status_table(self, mode):
         SQL = sqlite3.connect(f'ditto.db')
