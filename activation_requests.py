@@ -184,6 +184,8 @@ class ActivationRequests:
                 mode = modes[int(self.mic_on)]
                 if mode == 'on':
                     print('idle...\n')
+                else:
+                    print('mic muted...\n')
                 self.set_activation_mic_status_table(mode)
 
             if req[0] == "activation":
