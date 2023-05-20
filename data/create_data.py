@@ -14,7 +14,7 @@ from pydub.playback import play
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 RATE = 16000
-LSTM = True
+LSTM = False
 
 
 def white_noise(sample, amount=0.005):
