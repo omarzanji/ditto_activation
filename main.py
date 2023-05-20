@@ -29,7 +29,7 @@ import sounddevice as sd
 # supress tf
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-TRAIN = False
+TRAIN = True
 REINFORCE = False
 TFLITE = True
 MODEL_SELECT = 1  # 0 for HeyDittoNet-v2, 1 for HeyDittoNet-v1
@@ -99,38 +99,36 @@ class HeyDittoNet:
             self.early_stop_callback = tf.keras.callbacks.EarlyStopping(
                 monitor='loss', patience=3, restore_best_weights=True)
             xshape = self.x.shape[1:]
+            T = 2  # number of LSTM time units (pick even numbers)
             model = Sequential([
                 layers.Input(shape=xshape),
                 layers.Resizing(32, 32),
                 layers.Normalization(),
 
                 layers.Conv2D(32, (5, 5), strides=(2, 2),
-                              padding="same", activation="relu"),
+                              padding="valid", activation="relu"),
                 layers.BatchNormalization(),
                 layers.MaxPooling2D(pool_size=(2, 2)),
 
-                layers.Conv2D(64, (5, 5), strides=(4, 4),
-                              padding="same", activation="relu"),
+                layers.Conv2D(64, (5, 5), strides=(2, 2),
+                              padding="valid", activation="relu"),
                 layers.BatchNormalization(),
                 layers.MaxPooling2D(pool_size=(2, 2), padding='same'),
 
-                layers.Conv2D(128, (3, 3), strides=(4, 4),
+                layers.Conv2D(128, (3, 3), strides=(2, 2),
                               padding="same", activation="relu"),
                 layers.BatchNormalization(),
-                # layers.MaxPooling2D(pool_size=(2, 2)),
-                # layers.Flatten(),
-                # layers.Dense(32, activation='relu'),
-                layers.Reshape((2, 64)),
+
+                layers.Reshape((T, int(128/T))),
 
                 layers.LSTM(8, input_shape=(None, 2, 64), activation='relu'),
-                # layers.Dropout(0.3),
 
                 layers.Dense(32, activation='relu'),
-                # layers.Dropout(0.5),
 
-                layers.Dense(1),
-                layers.Activation('sigmoid')
+                layers.Dense(1, activation='sigmoid'),
             ])
+
+            model.summary()
 
             model.compile(loss='binary_crossentropy',
                           optimizer='adam', metrics='accuracy')
