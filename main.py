@@ -23,6 +23,7 @@ from tensorflow.keras import backend as K
 from matplotlib import pyplot as plt
 
 from pydub import AudioSegment, effects
+import soundfile
 import librosa
 
 # import queue
@@ -219,9 +220,21 @@ class HeyDittoNet:
         plt.xlabel('epoch')
         plt.legend(['training loss'], loc='upper right')
 
-    def normalize_audio(self, sample):
-        normalized = librosa.util.normalize(np.array(sample).astype('float32'))
-        return normalized.tolist()
+    def normalize_audio(self, signal, rms_level=-1):
+        """
+        Normalize the signal.
+        ref: https://superkogito.github.io/blog/2020/04/30/rms_normalization.html
+        """
+        signal = np.array(signal).astype('float32')
+
+        # linear rms level and scaling factor
+        r = 10**(rms_level / 10.0)
+        a = np.sqrt((len(signal) * r**2) / np.sum(signal**2))
+
+        # normalize
+        y = signal * a
+
+        return y
 
     def callback(self, indata, frames, time_, status):
         # self.q.put(indata.copy())
