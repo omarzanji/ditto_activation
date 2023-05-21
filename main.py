@@ -22,6 +22,9 @@ from tensorflow.keras import backend as K
 
 from matplotlib import pyplot as plt
 
+from pydub import AudioSegment, effects
+import librosa
+
 # import queue
 import time
 import sounddevice as sd
@@ -216,6 +219,10 @@ class HeyDittoNet:
         plt.xlabel('epoch')
         plt.legend(['training loss'], loc='upper right')
 
+    def normalize_audio(self, sample):
+        normalized = librosa.util.normalize(np.array(sample).astype('float32'))
+        return normalized.tolist()
+
     def callback(self, indata, frames, time_, status):
         # self.q.put(indata.copy())
         indata = np.array(indata).flatten()
@@ -224,10 +231,11 @@ class HeyDittoNet:
         if len(self.buffer) >= RATE and self.frames == 0:
             self.frames += frames
             self.buffer = self.buffer[-RATE:]
+            normalized = self.normalize_audio(self.buffer)
             if self.model_type == 'HeyDittoNet-v1':
-                spect = self.get_spectrograms(self.buffer)
+                spect = self.get_spectrograms(normalized)
             else:
-                spect = self.get_spectrogram(self.buffer)
+                spect = self.get_spectrogram(normalized)
             if self.tflite:
                 if self.model_type == 'HeyDittoNet-v1':
                     self.interpreter.set_tensor(
