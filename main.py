@@ -22,10 +22,6 @@ from tensorflow.keras import backend as K
 
 from matplotlib import pyplot as plt
 
-from pydub import AudioSegment, effects
-import soundfile
-import librosa
-
 # import queue
 import time
 import sounddevice as sd
