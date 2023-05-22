@@ -35,7 +35,7 @@ TFLITE = True
 MODEL_SELECT = 1  # 0 for HeyDittoNet-v2, 1 for HeyDittoNet-v1
 MODEL = ['HeyDittoNet-v1', 'HeyDittoNet-v2'][MODEL_SELECT]
 RATE = 16000
-SENSITIVITY = 0.95
+SENSITIVITY = 0.90
 
 
 class HeyDittoNet:
@@ -124,12 +124,12 @@ class HeyDittoNet:
                 layers.Reshape((T, LSTM_FEATURES)),
 
                 layers.LSTM(
-                    units=32,
+                    units=16,
                     input_shape=(None, T, LSTM_FEATURES),
                     return_sequences=True,
                     activation='tanh'
                 ),
-                layers.LSTM(32, return_sequences=False, activation='tanh'),
+                layers.LSTM(16, return_sequences=False, activation='tanh'),
 
                 layers.Dense(32, activation='relu'),
 
