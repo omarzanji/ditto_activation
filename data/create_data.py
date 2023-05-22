@@ -102,7 +102,7 @@ def generate_data() -> tuple:
         # audio_really_quiet = lower_volume(activation_phrase, db=20)
         # audio_very_quiet = lower_volume(activation_phrase, db=30)
         audio_noise = white_noise(audio[0], amount=random.uniform(0.002, 0.02))
-        audio_stretch_low = stretch(audio[0], rate=random.uniform(0.88, 0.99))
+        # audio_stretch_low = stretch(audio[0], rate=random.uniform(0.88, 0.99))
         audio_stretch_high = stretch(audio[0], rate=random.uniform(1.1, 1.3))
         combined_audio = combine_with(activation_phrase, background_noise)
         # print(audio[0])
@@ -156,14 +156,14 @@ def generate_data() -> tuple:
             # y.append(1)
             x.append(get_spectrogram(audio_noise))
             y.append(1)
-            x.append(get_spectrogram(audio_stretch_low))
-            y.append(1)
+            # x.append(get_spectrogram(audio_stretch_low))
+            # y.append(1)
             x.append(get_spectrogram(audio_stretch_high))
             y.append(1)
             x.append(get_spectrogram(combined_audio))
             y.append(1)
 
-        t_cnt += 6  # true class count
+        t_cnt += 5  # true class count
 
     for ndx, background_noise in enumerate(background_set):
         count = ndx + 1

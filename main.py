@@ -29,13 +29,13 @@ import sounddevice as sd
 # supress tf
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-TRAIN = False
+TRAIN = True
 REINFORCE = False
 TFLITE = True
 MODEL_SELECT = 1  # 0 for HeyDittoNet-v2, 1 for HeyDittoNet-v1
 MODEL = ['HeyDittoNet-v1', 'HeyDittoNet-v2'][MODEL_SELECT]
 RATE = 16000
-SENSITIVITY = 0.99
+SENSITIVITY = 0.95
 
 
 class HeyDittoNet:
@@ -99,10 +99,12 @@ class HeyDittoNet:
             self.early_stop_callback = tf.keras.callbacks.EarlyStopping(
                 monitor='loss', patience=3, restore_best_weights=True)
             xshape = self.x.shape[1:]
-            T = 2  # number of LSTM time units (pick even numbers)
+            T = 2  # number of LSTM time units
+            CNN_OUT = 128
+            LSTM_FEATURES = int(T*CNN_OUT)
             model = Sequential([
                 layers.Input(shape=xshape),
-                layers.Resizing(32, 32),
+                layers.Resizing(64, 64),
                 layers.Normalization(),
 
                 layers.Conv2D(32, (5, 5), strides=(2, 2),
@@ -110,24 +112,30 @@ class HeyDittoNet:
                 layers.BatchNormalization(),
                 layers.MaxPooling2D(pool_size=(2, 2)),
 
-                layers.Conv2D(64, (5, 5), strides=(2, 2),
+                layers.Conv2D(64, (3, 3), strides=(2, 2),
                               padding="valid", activation="relu"),
                 layers.BatchNormalization(),
                 layers.MaxPooling2D(pool_size=(2, 2), padding='same'),
 
-                layers.Conv2D(128, (3, 3), strides=(2, 2),
+                layers.Conv2D(CNN_OUT, (3, 3), strides=(2, 2),
                               padding="same", activation="relu"),
                 layers.BatchNormalization(),
 
-                layers.Reshape((T, int(128/T))),
+                layers.Reshape((T, LSTM_FEATURES)),
 
-                layers.LSTM(8, input_shape=(None, 2, 64), activation='relu'),
+                layers.LSTM(
+                    units=32,
+                    input_shape=(None, T, LSTM_FEATURES),
+                    return_sequences=True,
+                    activation='tanh'
+                ),
+                layers.LSTM(32, return_sequences=False, activation='tanh'),
 
                 layers.Dense(32, activation='relu'),
 
                 layers.Dense(1, activation='sigmoid'),
             ])
-
+            model.build((None, xshape[0], xshape[1], xshape[2]))
             model.summary()
 
             model.compile(loss='binary_crossentropy',
