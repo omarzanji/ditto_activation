@@ -100,7 +100,7 @@ class HeyDittoNet:
                 monitor='loss', patience=3, restore_best_weights=True)
             xshape = self.x.shape[1:]
             T = 2  # number of LSTM time units
-            CNN_OUT = 128
+            CNN_OUT = 64
             LSTM_FEATURES = int(T*CNN_OUT)
             model = Sequential([
                 layers.Input(shape=xshape),
@@ -117,19 +117,19 @@ class HeyDittoNet:
                 layers.BatchNormalization(),
                 layers.MaxPooling2D(pool_size=(2, 2), padding='same'),
 
-                layers.Conv2D(CNN_OUT, (3, 3), strides=(2, 2),
+                layers.Conv2D(CNN_OUT, (3, 3), strides=(3, 3),
                               padding="same", activation="relu"),
                 layers.BatchNormalization(),
 
                 layers.Reshape((T, LSTM_FEATURES)),
 
                 layers.LSTM(
-                    units=16,
+                    units=8,
                     input_shape=(None, T, LSTM_FEATURES),
-                    return_sequences=True,
+                    return_sequences=False,
                     activation='tanh'
                 ),
-                layers.LSTM(16, return_sequences=False, activation='tanh'),
+                # layers.LSTM(16, return_sequences=False, activation='tanh'),
 
                 layers.Dense(32, activation='relu'),
 
