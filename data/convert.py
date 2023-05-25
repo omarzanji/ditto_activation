@@ -1,3 +1,4 @@
+import random
 import os
 import librosa
 import soundfile as sf
@@ -64,18 +65,25 @@ import time
 # for i in range(0, int(y.size), chunk_size): # iterate through each second
 #     sf.write(f'raw_data/background_horns_{i}.wav', y[i:i+chunk_size], 16000)
 
-for file in os.listdir('background_data/'):
+files = list(os.listdir('background_data/'))
+random.shuffle(files)
+count = 50
+num = 0
+for file in files:
+    if num == 50:
+        break
     if 'already-trained' in file:
         continue
     else:
         print(f'loading {file}')
+        num += 1
         y, s = librosa.load(f'background_data/{file}', sr=16000, mono=True)
         # each sample is 1 second, so to get 1 second chunks, divide by RATE
         chunk_size = int(y.size/(y.size/16000))
         # count = 0
         for i in range(0, int(y.size), chunk_size):  # iterate through each second
             sf.write(
-                f'raw_data/background_{file}_{i}.wav', y[i:i+chunk_size], 16000)
+                f'raw_data/background_music_{file}_{i}.wav', y[i:i+chunk_size], 16000)
             # count += 1
             # if count == 600:
             #     break  # 10 minutes sampled audio
