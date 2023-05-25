@@ -34,6 +34,19 @@ def stretch(sample, rate=1):
     return data
 
 
+def downsample_audio(sample):
+    random_downscale_sr = np.random.randint(4000, 8000)
+    downsampled = librosa.resample(
+        y=sample,
+        orig_sr=16000,
+        target_sr=random_downscale_sr)
+    downsample_audio_upscaled = librosa.resample(
+        y=downsampled,
+        orig_sr=random_downscale_sr,
+        target_sr=16000)
+    return downsample_audio_upscaled
+
+
 def lower_volume(sample, db=10):
     raw_audio = AudioSegment.from_wav(sample)
     audio = effects.normalize(raw_audio)
@@ -94,6 +107,8 @@ def generate_data() -> tuple:
     random.shuffle(activation_set)
     # random.shuffle(background_set) # probably shouldn't shuffle for RNN to understand people talking in order
     for activation_phrase, background_noise in zip(activation_set, background_set):
+        if 'Neural2' in activation_phrase:
+            continue  # contains a lot of dirty samples...
         # audio = librosa.load(activation_phrase, sr=16000)
         audio = [normalize_audio(activation_phrase)]
         # data augmentation
@@ -104,12 +119,15 @@ def generate_data() -> tuple:
         audio_noise = white_noise(audio[0], amount=random.uniform(0.002, 0.02))
         # audio_stretch_low = stretch(audio[0], rate=random.uniform(0.88, 0.99))
         audio_stretch_high = stretch(audio[0], rate=random.uniform(1.1, 1.3))
+        audio_downsampled = downsample_audio(audio[0])
         combined_audio = combine_with(activation_phrase, background_noise)
         # print(audio[0])
         # print(audio_quiet)
         # print(get_spectrogram(audio[0]))
         # print(get_spectrogram(audio_normalized))
         # sounddevice.play(audio[0], samplerate=16000)
+        # time.sleep(1)
+        # sounddevice.play(audio_downsampled, samplerate=16000)
         # time.sleep(1)
         # sounddevice.play(audio_noise, samplerate=16000)
         # time.sleep(1)
@@ -160,10 +178,12 @@ def generate_data() -> tuple:
             # y.append(1)
             x.append(get_spectrogram(audio_stretch_high))
             y.append(1)
+            x.append(get_spectrogram(audio_downsampled))
+            y.append(1)
             x.append(get_spectrogram(combined_audio))
             y.append(1)
 
-        t_cnt += 5  # true class count
+        t_cnt += 6  # true class count
 
     for ndx, background_noise in enumerate(background_set):
         count = ndx + 1
