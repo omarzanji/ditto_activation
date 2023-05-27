@@ -29,7 +29,7 @@ import sounddevice as sd
 # supress tf
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-TRAIN = False
+TRAIN = True
 REINFORCE = False
 TFLITE = True
 MODEL_SELECT = 1  # 0 for HeyDittoNet-v2, 1 for HeyDittoNet-v1
@@ -97,7 +97,7 @@ class HeyDittoNet:
     def create_model(self):
         if self.model_type == 'HeyDittoNet-v2':
             self.early_stop_callback = tf.keras.callbacks.EarlyStopping(
-                monitor='loss', patience=5, restore_best_weights=True)
+                monitor='loss', patience=2, restore_best_weights=True)
             xshape = self.x.shape[1:]
             T = 2  # number of LSTM time units
             CNN_OUT = 64
