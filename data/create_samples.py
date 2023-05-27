@@ -32,19 +32,19 @@ def gen_eleven_labs_sample(text, fname='heyditto'):
     voices = user.get_all_voices()
     random.shuffle(voices)
     for voice in voices:
-        # if 'new' in voice.initialName:
-        for i in range(50):
-            print(
-                f'generating {voice.initialName}-{voice.voiceID} iteration {i+1}')
-            s = np.random.rand()
-            sb = np.random.rand()
-            data = voice.generate_audio_bytes(
-                prompt=text,
-                stability=s,
-                similarity_boost=sb
-            )
-            save_bytes_to_path(
-                f"elvenlabs_samples/session7/{voice.voiceID}-{fname}-{i}-{s}-{sb}.wav", data)
+        if 'new' in voice.initialName:
+            for i in range(5):
+                print(
+                    f'generating {voice.initialName}-{voice.voiceID} iteration {i+1}')
+                s = np.random.rand()
+                sb = np.random.rand()
+                data = voice.generate_audio_bytes(
+                    prompt=text,
+                    stability=s,
+                    similarity_boost=sb
+                )
+                save_bytes_to_path(
+                    f"elvenlabs_samples/session8/{voice.voiceID}-{fname}-{i}-{s}-{sb}.wav", data)
 
 
 def list_voices(language_code=None):
@@ -112,10 +112,25 @@ def generate_heyditto_samples():
 
 # generate_heyditto_samples()
 # generate_background_samples()
-gen_eleven_labs_sample(
-    text='Hey Ditto.',
-    fname='heyditto'
-)
+# sentences = ["The quick brown fox jumps over the lazy dog.",
+#              "The cat sat on the mat.",
+#              "I love you.",
+#              "I am a large language model.",
+#              "The sky is blue.",
+#              "The grass is green.",
+#              "The sun is shining.",
+#              "The birds are singing.",
+#              "It is a beautiful day.",
+#              "I am happy."]
+sentences = ['Hey Ditto?',
+             'HEY DITTO!!!',
+             'hey ditto?',
+             'Hey! Ditto!']
+for sentence in sentences:
+    gen_eleven_labs_sample(
+        text=sentence,
+        fname='heyditto'
+    )
 # gen_eleven_labs_sample(
 #     text='Hey Ditto!',
 #     fname='heyditto-exclamation'

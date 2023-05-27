@@ -78,7 +78,7 @@ def combine_with(activation, background):
     if 'music' in background:
         decrease_amount = np.random.randint(2, 4)
     else:
-        decrease_amount = np.random.randint(8, 10)
+        decrease_amount = np.random.randint(6, 10)
     a_audio = AudioSegment.from_wav(activation)
     a_audio_norm = effects.normalize(a_audio)
     b_audio = AudioSegment.from_wav(background)

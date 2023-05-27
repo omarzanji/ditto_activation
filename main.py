@@ -97,7 +97,7 @@ class HeyDittoNet:
     def create_model(self):
         if self.model_type == 'HeyDittoNet-v2':
             self.early_stop_callback = tf.keras.callbacks.EarlyStopping(
-                monitor='loss', patience=3, restore_best_weights=True)
+                monitor='loss', patience=5, restore_best_weights=True)
             xshape = self.x.shape[1:]
             T = 2  # number of LSTM time units
             CNN_OUT = 64
@@ -124,7 +124,7 @@ class HeyDittoNet:
                 layers.Reshape((T, LSTM_FEATURES)),
 
                 layers.LSTM(
-                    units=8,
+                    units=16,
                     input_shape=(None, T, LSTM_FEATURES),
                     return_sequences=False,
                     activation='tanh'
