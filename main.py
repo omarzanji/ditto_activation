@@ -97,7 +97,7 @@ class HeyDittoNet:
     def create_model(self):
         if self.model_type == 'HeyDittoNet-v2':
             self.early_stop_callback = tf.keras.callbacks.EarlyStopping(
-                monitor='loss', patience=2, restore_best_weights=True)
+                monitor='loss', patience=3, restore_best_weights=True)
             xshape = self.x.shape[1:]
             T = 2  # number of LSTM time units
             CNN_OUT = 64
@@ -132,6 +132,8 @@ class HeyDittoNet:
                 # layers.LSTM(16, return_sequences=False, activation='tanh'),
 
                 layers.Dense(32, activation='relu'),
+
+                layers.Dropout(0.2),
 
                 layers.Dense(1, activation='sigmoid'),
             ])
@@ -229,14 +231,18 @@ class HeyDittoNet:
         Normalize the signal.
         ref: https://superkogito.github.io/blog/2020/04/30/rms_normalization.html
         """
-        signal = np.array(signal).astype('float32')
+        try:
+            signal = np.array(signal).astype('float32')
 
-        # linear rms level and scaling factor
-        r = 10**(rms_level / 10.0)
-        a = np.sqrt((len(signal) * r**2) / np.sum(signal**2))
+            # linear rms level and scaling factor
+            r = 10**(rms_level / 10.0)
+            a = np.sqrt((len(signal) * r**2) / np.sum(signal**2))
 
-        # normalize
-        y = signal * a
+            # normalize
+            y = signal * a
+        except BaseException as e:
+            print(e)
+            return signal
 
         return y
 
