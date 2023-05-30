@@ -75,10 +75,7 @@ def normalize_audio(sample):
 
 
 def combine_with(activation, background):
-    if 'music' in background:
-        decrease_amount = np.random.randint(2, 4)
-    else:
-        decrease_amount = np.random.randint(6, 10)
+    decrease_amount = np.random.uniform(2.5, 8)
     a_audio = AudioSegment.from_wav(activation)
     a_audio_norm = effects.normalize(a_audio)
     b_audio = AudioSegment.from_wav(background)
@@ -206,28 +203,21 @@ def generate_data() -> tuple:
             audio_noise = white_noise(
                 audio[0], amount=random.uniform(0.002, 0.2))
 
-            audio_loud = lower_volume(
-                background_noise, db=np.random.randint(-30, -10)+np.random.rand())  # Increases volume
-
             audio_quiet = lower_volume(background_noise, db=np.random.randint(
                 10, 20)+np.random.rand())  # Decreases volume
 
             if LSTM:
                 x.append(get_spectrograms(audio_noise))
                 y.append(0)
-                x.append(get_spectrograms(audio_loud))
-                y.append(0)
                 x.append(get_spectrograms(audio_quiet))
                 y.append(0)
             else:
                 x.append(get_spectrogram(audio_noise))
                 y.append(0)
-                x.append(get_spectrogram(audio_loud))
-                y.append(0)
                 x.append(get_spectrogram(audio_quiet))
                 y.append(0)
 
-            f_cnt += 4  # false class count
+            f_cnt += 3  # false class count
 
             # sounddevice.play(audio[0], samplerate=16000)
             # time.sleep(1)
