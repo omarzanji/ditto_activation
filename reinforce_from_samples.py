@@ -8,10 +8,13 @@ import numpy as np
 ditto = HeyDittoNet(tflite=False)
 reinforce_conf = json.load(open('data/reinforced_data/conf.json', 'r'))
 
-dir = 'data/audio_books/'
+# dir = 'data/audio_books/'
+dir = 'data/yt_audio/'
 files = os.listdir(dir)
 random.shuffle(files)
 for ndx, file in enumerate(files):
+    if '.ini' in file:
+        continue
     X = []
     Y = []
     print(f'Testing on {file}')
