@@ -14,7 +14,7 @@ from pydub.playback import play
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 RATE = 16000
-LSTM = False
+TIME_SERIES = True
 
 
 def white_noise(sample, amount=0.005):
@@ -143,20 +143,14 @@ def generate_data() -> tuple:
         # sounddevice.play(combined_audio, samplerate=16000)
         # time.sleep(1)
         # exit()
-        if LSTM:
-            spect = get_spectrograms(audio[0])
-            x.append(spect)
-            return x
+        if TIME_SERIES:
+            x.append(get_spectrograms(audio[0]))
             y.append(1)  # activate
             x.append(get_spectrograms(audio_quiet))
             y.append(1)
-            # x.append(get_spectrogram(audio_really_quiet))
-            # y.append(1)
-            # x.append(get_spectrogram(audio_very_quiet))
-            # y.append(1)
             x.append(get_spectrograms(audio_noise))
             y.append(1)
-            x.append(get_spectrograms(audio_stretch_low))
+            x.append(get_spectrograms(audio_downsampled))
             y.append(1)
             x.append(get_spectrograms(audio_stretch_high))
             y.append(1)
@@ -189,7 +183,7 @@ def generate_data() -> tuple:
     for ndx, background_noise in enumerate(background_set):
         count = ndx + 1
         audio = [normalize_audio(background_noise)]
-        if LSTM:
+        if TIME_SERIES:
             spect = get_spectrograms(audio[0])
         else:
             spect = get_spectrogram(audio[0])
@@ -206,7 +200,7 @@ def generate_data() -> tuple:
             audio_quiet = lower_volume(background_noise, db=np.random.randint(
                 10, 20)+np.random.rand())  # Decreases volume
 
-            if LSTM:
+            if TIME_SERIES:
                 x.append(get_spectrograms(audio_noise))
                 y.append(0)
                 x.append(get_spectrograms(audio_quiet))
@@ -232,41 +226,40 @@ def generate_data() -> tuple:
             # time.sleep(1)
         else:
             f_cnt += 1  # false class count
-    if not LSTM:
-        try:
-            print('loading reinforcement sessions...\n')
-            with open('reinforced_data/conf.json', 'r') as f:
-                conf = json.load(f)
-                sessions_total = conf['sessions_total']
-            for session in range(sessions_total):
-                print(f'\nprocessing reinforcement session {session}')
-                additional_x = np.load(
-                    f'reinforced_data/{session}_train_data_x.npy')
-                additional_y = np.load(
-                    f'reinforced_data/{session}_train_data_y.npy')
-                for ndx, spect in enumerate(additional_x):
-                    x.append(spect)
-                    y.append(additional_y[ndx])
-                    f_cnt += 1
-        except:
-            pass
+    # if not TIME_SERIES:
+    print('loading reinforcement sessions...\n')
+    reinforce_dir = 'reinforce_background/'
+    with open(f'{reinforce_dir}conf.json', 'r') as f:
+        conf = json.load(f)
+        sessions_total = conf['sessions_total']
+    for session in range(sessions_total):
+        print(f'\nprocessing reinforcement session {session}')
+        additional_x = np.load(
+            f'{reinforce_dir}{session}_train_data_x.npy')
+        additional_y = np.load(
+            f'{reinforce_dir}{session}_train_data_y.npy')
+        for ndx, sample in enumerate(additional_x):
+            spect = get_spectrograms(sample)
+            x.append(spect)
+            y.append(additional_y[ndx])
+            f_cnt += 1
 
     print(
         f'\n\ncreated {t_cnt} activation sets and {f_cnt} background sets\n\n')
 
     print('\n\nsaving x and y as .npy cache\n\n')
-    if LSTM:
-        np.save('x_data_lstm.npy', x)
-        np.save('y_data_lstm.npy', y)
+    if TIME_SERIES:
+        np.save('x_data_ts.npy', x)
+        np.save('y_data_ts.npy', y)
     else:
         np.save('x_data.npy', x)
         np.save('y_data.npy', y)
     return x, y
 
 
-def get_spectrograms(waveform: list) -> list:
+def get_spectrograms(waveform: list, time_steps=4) -> list:
     '''
-    Function for converting 16K Hz waveform to two half-second spectrograms for LSTM model.
+    Function for converting 16K Hz waveform to two half-second spectrograms for TIME_SERIES model.
     ref: https://www.tensorflow.org/tutorials/audio/simple_audio
     '''
 
@@ -275,43 +268,29 @@ def get_spectrograms(waveform: list) -> list:
     # Zero-padding for an audio waveform with less than 16,000 samples.
     input_len = RATE
     waveform = waveform[:input_len]
-    waveform1 = waveform[:8000]  # 1st half second
-    waveform2 = waveform[8000:]  # 2nd half second
-
-    zero_padding1 = tf.zeros(
-        [RATE] - tf.shape(waveform1),
+    zero_padding = tf.zeros(
+        [RATE] - tf.shape(waveform),
         dtype=tf.float32)
-    zero_padding2 = tf.zeros(
-        [RATE] - tf.shape(waveform2),
-        dtype=tf.float32)
-    # Cast the waveform tensors' dtype to float32.
-    waveform1 = tf.cast(waveform1, dtype=tf.float32)
-    waveform2 = tf.cast(waveform2, dtype=tf.float32)
-    # Concatenate the waveform with `zero_padding`, which ensures all audio
-    # clips are of the same length.
-    equal_length1 = tf.concat([waveform1, zero_padding1], 0)
-    equal_length2 = tf.concat([waveform2, zero_padding2], 0)
+    waveform = tf.cast(waveform, dtype=tf.float32)
+    waveform = tf.concat([waveform, zero_padding], 0)
+    chunk_size = int(len(waveform) / time_steps)
+    spectrograms = []
+    for i in range(0, len(waveform), chunk_size):
+        data = waveform[i:i+chunk_size]
 
-    # Convert the waveform to a spectrogram via a STFT.
-    spectrogram1 = tf.signal.stft(
-        equal_length1, frame_length=255, frame_step=128)
-    # Obtain the magnitude of the STFT.
-    spectrogram1 = tf.abs(spectrogram1)
-    # Add a `channels` dimension, so that the spectrogram can be used
-    # as image-like input data with convolution layers (which expect
-    # shape (`batch_size`, `height`, `width`, `channels`).
-    spectrogram1 = spectrogram1[..., tf.newaxis]
+        # Convert the waveform to a spectrogram via a STFT.
+        spectrogram = tf.signal.stft(
+            data, frame_length=256, frame_step=80)
+        # Obtain the magnitude of the STFT.
+        spectrogram = tf.abs(spectrogram)
+        # Add a `channels` dimension, so that the spectrogram can be used
+        # as image-like input data with convolution layers (which expect
+        # shape (`batch_size`, `height`, `width`, `channels`).
+        spectrogram = spectrogram[..., tf.newaxis]
 
-    spectrogram2 = tf.signal.stft(
-        equal_length2, frame_length=255, frame_step=128)
-    # Obtain the magnitude of the STFT.
-    spectrogram2 = tf.abs(spectrogram2)
-    # Add a `channels` dimension, so that the spectrogram can be used
-    # as image-like input data with convolution layers (which expect
-    # shape (`batch_size`, `height`, `width`, `channels`).
-    spectrogram2 = spectrogram2[..., tf.newaxis]
+        spectrograms.append(spectrogram)
 
-    return spectrogram1, spectrogram2
+    return spectrograms
 
 
 def get_spectrogram(waveform: list) -> list:

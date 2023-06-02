@@ -29,10 +29,10 @@ import sounddevice as sd
 # supress tf
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-TRAIN = True
+TRAIN = False
 REINFORCE = False
 TFLITE = True
-MODEL_SELECT = 1  # 0 for HeyDittoNet-v2, 1 for HeyDittoNet-v1
+MODEL_SELECT = 0  # 0 for HeyDittoNet-v2, 1 for HeyDittoNet-v1
 MODEL = ['HeyDittoNet-v1', 'HeyDittoNet-v2'][MODEL_SELECT]
 RATE = 16000
 SENSITIVITY = 0.99
@@ -43,7 +43,7 @@ class HeyDittoNet:
     HeyDittoNet is a model for recognizing "Hey Ditto" from machine's default mic.
     '''
 
-    def __init__(self, train=False, model_type='HeyDittoNet-v2', tflite=True, path='', reinforce=REINFORCE):
+    def __init__(self, train=False, model_type='HeyDittoNet-v1', tflite=True, path='', reinforce=REINFORCE):
         self.train = train
         self.model_type = model_type
         self.tflite = tflite
@@ -62,8 +62,8 @@ class HeyDittoNet:
     def load_data(self):
         try:
             if MODEL == 'HeyDittoNet-v1':
-                self.x = np.load('data/x_data_lstm.npy', allow_pickle=True)
-                self.y = np.load('data/y_data_lstm.npy', allow_pickle=True)
+                self.x = np.load('data/x_data_ts.npy', allow_pickle=True)
+                self.y = np.load('data/y_data_ts.npy', allow_pickle=True)
             else:
                 self.x = np.load('data/x_data.npy', allow_pickle=True)
                 self.y = np.load('data/y_data.npy', allow_pickle=True)
@@ -95,6 +95,8 @@ class HeyDittoNet:
                 0]["index"]
 
     def create_model(self):
+        print('Xshape: ', self.x.shape)
+        print('Yshape:', self.y.shape)
         if self.model_type == 'HeyDittoNet-v2':
             self.early_stop_callback = tf.keras.callbacks.EarlyStopping(
                 monitor='loss', patience=3, restore_best_weights=True)
@@ -145,49 +147,58 @@ class HeyDittoNet:
             return model
         elif self.model_type == 'HeyDittoNet-v1':
             self.early_stop_callback = tf.keras.callbacks.EarlyStopping(
-                monitor='loss', patience=10, restore_best_weights=True)
+                monitor='loss', patience=4, restore_best_weights=True)
 
             N = 32
 
             conv_model = Sequential()
+
             conv_model.add(layers.Resizing(32, 32))
             conv_model.add(layers.Normalization()),
+
             conv_model.add(layers.Conv2D(
                 32, (5, 5), strides=(2, 2), padding="same", activation="relu"))
             conv_model.add(layers.BatchNormalization())
             conv_model.add(layers.MaxPooling2D(pool_size=(2, 2)))
 
             conv_model.add(layers.Conv2D(
-                64, (5, 5), strides=(4, 4), padding="same", activation="relu"))
+                64, (3, 3), strides=(2, 2), padding="same", activation="relu"))
             conv_model.add(layers.BatchNormalization())
             conv_model.add(layers.MaxPooling2D(
                 pool_size=(2, 2), padding='same'))
 
             conv_model.add(layers.Conv2D(
-                128, (3, 3), strides=(4, 4), padding="same", activation="relu"))
+                64, (3, 3), strides=(2, 2), padding="same", activation="relu"))
             conv_model.add(layers.BatchNormalization())
-            # conv_model.add(layers.MaxPooling2D(pool_size=(2, 2)))
 
-            # conv_model.add(layers.Conv2D(
-            # 64, (3, 3), strides=(3, 3), padding="same", activation="relu"))
-            # conv_model.add(layers.BatchNormalization())
-            # conv_model.add(layers.MaxPooling2D(pool_size=(2, 2)))
             conv_model.add(layers.Flatten())
             conv_model.add(layers.Dense(N, activation='relu'))
+            conv_model.add(layers.Dropout(0.2))
 
             model = Sequential()
 
             model.add(layers.TimeDistributed(conv_model, input_shape=(
                 self.x.shape[1], self.x.shape[2], self.x.shape[3], self.x.shape[4])))
 
-            model.add(layers.LSTM(8)),
+            model.add(layers.LSTM(16, return_sequences=True)),
+            model.add(layers.LSTM(16, return_sequences=False)),
 
-            model.add(layers.Dense(int(N/4), activation='relu'))
-            # model.add(layers.Dropout(0.5))
+            model.add(layers.Dense(N, activation='relu'))
+            model.add(layers.Dropout(0.2))
+
             model.add(layers.Dense(1))
             model.add(layers.Activation('sigmoid'))
+
+            conv_model.build(
+                (None, self.x.shape[2], self.x.shape[3], self.x.shape[4]))
+            conv_model.summary()
+            model.build(
+                (None, self.x.shape[1], self.x.shape[2], self.x.shape[3]))
+            model.summary()
+
             model.compile(loss='binary_crossentropy',
                           optimizer='adam', metrics='accuracy')
+
             return model
 
     def train_model(self, model):
@@ -203,7 +214,7 @@ class HeyDittoNet:
         self.hist = model.fit(xtrain, ytrain, epochs=epochs, verbose=1,
                               batch_size=batch_size, callbacks=[self.early_stop_callback])
         self.plot_history(self.hist)
-        model.summary()
+        # model.summary()
         ypreds = model.predict(xtest)
         self.ypreds = []
         for y in ypreds:
@@ -335,9 +346,9 @@ class HeyDittoNet:
         spectrogram = spectrogram[..., tf.newaxis]
         return spectrogram
 
-    def get_spectrograms(self, waveform: list) -> list:
+    def get_spectrograms(self, waveform: list, time_steps=4) -> list:
         '''
-        Function for converting 16K Hz waveform to two half-second spectrograms for LSTM model.
+        Function for converting 16K Hz waveform to two half-second spectrograms for TIME_SERIES model.
         ref: https://www.tensorflow.org/tutorials/audio/simple_audio
         '''
 
@@ -346,43 +357,29 @@ class HeyDittoNet:
         # Zero-padding for an audio waveform with less than 16,000 samples.
         input_len = RATE
         waveform = waveform[:input_len]
-        waveform1 = waveform[:8000]  # 1st half second
-        waveform2 = waveform[8000:]  # 2nd half second
-
-        zero_padding1 = tf.zeros(
-            [RATE] - tf.shape(waveform1),
+        zero_padding = tf.zeros(
+            [RATE] - tf.shape(waveform),
             dtype=tf.float32)
-        zero_padding2 = tf.zeros(
-            [RATE] - tf.shape(waveform2),
-            dtype=tf.float32)
-        # Cast the waveform tensors' dtype to float32.
-        waveform1 = tf.cast(waveform1, dtype=tf.float32)
-        waveform2 = tf.cast(waveform2, dtype=tf.float32)
-        # Concatenate the waveform with `zero_padding`, which ensures all audio
-        # clips are of the same length.
-        equal_length1 = tf.concat([waveform1, zero_padding1], 0)
-        equal_length2 = tf.concat([waveform2, zero_padding2], 0)
+        waveform = tf.cast(waveform, dtype=tf.float32)
+        waveform = tf.concat([waveform, zero_padding], 0)
+        chunk_size = int(len(waveform) / time_steps)
+        spectrograms = []
+        for i in range(0, len(waveform), chunk_size):
+            data = waveform[i:i+chunk_size]
 
-        # Convert the waveform to a spectrogram via a STFT.
-        spectrogram1 = tf.signal.stft(
-            equal_length1, frame_length=255, frame_step=128)
-        # Obtain the magnitude of the STFT.
-        spectrogram1 = tf.abs(spectrogram1)
-        # Add a `channels` dimension, so that the spectrogram can be used
-        # as image-like input data with convolution layers (which expect
-        # shape (`batch_size`, `height`, `width`, `channels`).
-        spectrogram1 = spectrogram1[..., tf.newaxis]
+            # Convert the waveform to a spectrogram via a STFT.
+            spectrogram = tf.signal.stft(
+                data, frame_length=256, frame_step=80)
+            # Obtain the magnitude of the STFT.
+            spectrogram = tf.abs(spectrogram)
+            # Add a `channels` dimension, so that the spectrogram can be used
+            # as image-like input data with convolution layers (which expect
+            # shape (`batch_size`, `height`, `width`, `channels`).
+            spectrogram = spectrogram[..., tf.newaxis]
 
-        spectrogram2 = tf.signal.stft(
-            equal_length2, frame_length=255, frame_step=128)
-        # Obtain the magnitude of the STFT.
-        spectrogram2 = tf.abs(spectrogram2)
-        # Add a `channels` dimension, so that the spectrogram can be used
-        # as image-like input data with convolution layers (which expect
-        # shape (`batch_size`, `height`, `width`, `channels`).
-        spectrogram2 = spectrogram2[..., tf.newaxis]
+            spectrograms.append(spectrogram)
 
-        return spectrogram1, spectrogram2
+        return spectrograms
 
     def save_reinforce_trigger(self):
         with open(f'{self.path}data/reinforced_data/conf.json', 'r') as f:
