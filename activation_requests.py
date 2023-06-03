@@ -47,6 +47,7 @@ class ActivationRequests:
             print('Error below from get_activation_mic_status:')
             print(e)
             return mic_status
+        SQL.close()
         return mic_status
 
     def set_activation_mic_status_table(self, mode):
@@ -74,6 +75,7 @@ class ActivationRequests:
             cur.execute(
                 f"INSERT INTO ditto_status_table VALUES('activation_mic', '{mode}')")
             SQL.commit()
+        SQL.close()
 
     def check_for_gesture(self):
         '''
@@ -160,7 +162,6 @@ class ActivationRequests:
                 print("\n[GUI prompt received]\n")
                 cur.execute("DROP TABLE ditto_requests")
                 SQL.commit()
-                SQL.close()
                 self.running = False
                 self.inject_prompt = True
                 self.activated = 1
@@ -169,7 +170,6 @@ class ActivationRequests:
                 print("\n[Reset conversation request received]\n")
                 cur.execute("DROP TABLE ditto_requests")
                 SQL.commit()
-                SQL.close()
                 self.running = False
                 self.reset_conversation = True
                 self.activated = 1
@@ -178,7 +178,7 @@ class ActivationRequests:
                 print("\n[Ditto toggle mic request received]\n")
                 cur.execute("DROP TABLE ditto_requests")
                 SQL.commit()
-                SQL.close()
+
                 modes = ['off', 'on']
                 self.mic_on = not self.mic_on
                 mode = modes[int(self.mic_on)]
@@ -192,9 +192,8 @@ class ActivationRequests:
                 print("\n[Ditto activation request received]\n")
                 cur.execute("DROP TABLE ditto_requests")
                 SQL.commit()
-                SQL.close()
                 self.running = False
                 self.activated = 1
-
+            SQL.close()
         except BaseException as e:
             pass
