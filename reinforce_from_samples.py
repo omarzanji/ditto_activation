@@ -5,7 +5,7 @@ import random
 import librosa
 import numpy as np
 
-SENSITIVITY = 0.80
+SENSITIVITY = 0.50
 
 ditto = HeyDittoNet(tflite=False)
 reinforce_conf_dir = 'data/reinforce_background/conf.json'
