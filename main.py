@@ -29,13 +29,13 @@ import sounddevice as sd
 # supress tf
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-TRAIN = True
+TRAIN = False
 REINFORCE = False
 TFLITE = True
 MODEL_SELECT = 0  # 0 for HeyDittoNet-v2, 1 for HeyDittoNet-v1
 MODEL = ['HeyDittoNet-v1', 'HeyDittoNet-v2'][MODEL_SELECT]
 RATE = 16000
-SENSITIVITY = 0.99
+SENSITIVITY = 0.70
 
 
 class HeyDittoNet:
@@ -264,6 +264,7 @@ class HeyDittoNet:
             self.buffer.append(vals)
         if len(self.buffer) >= RATE and self.frames == 0:
             self.frames += frames
+            self.pred_count += 1
             self.buffer = self.buffer[-RATE:]
             normalized = self.normalize_audio(self.buffer)
             if self.model_type == 'HeyDittoNet-v1':
@@ -314,6 +315,13 @@ class HeyDittoNet:
                 time.sleep(0.001)
                 # print(f'{pred[0][0]*100}%')
                 pass
+
+            # garbage
+            pred = None
+            spect = None
+            normalized = None
+            indata = None
+
         if self.frames > 0:
             self.frames += frames
             if self.frames >= RATE/4:
@@ -404,6 +412,7 @@ class HeyDittoNet:
         self.train_data_y = []
         self.frames = 0
         self.activation_time = None
+        self.pred_count = 0
 
         # import activation_requests
         if self.path == 'modules/ditto_activation/':
@@ -429,8 +438,9 @@ class HeyDittoNet:
                                 latency='low',
                                 channels=1,
                                 callback=self.callback,
-                                blocksize=4000) as stream:
+                                blocksize=int(RATE/4)) as stream:
                 while True:
+
                     self.activation_requests.check_for_gesture()
                     self.activation_requests.check_for_request()
                     if not self.activation_requests.mic_on:
