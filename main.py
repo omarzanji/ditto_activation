@@ -258,13 +258,12 @@ class HeyDittoNet:
         return y
 
     def callback(self, indata, frames, time_, status):
-        # self.q.put(indata.copy())
+        time_, status = None, None
         indata = np.array(indata).flatten()
         for vals in indata:
             self.buffer.append(vals)
         if len(self.buffer) >= RATE and self.frames == 0:
             self.frames += frames
-            self.pred_count += 1
             self.buffer = self.buffer[-RATE:]
             normalized = self.normalize_audio(self.buffer)
             if self.model_type == 'HeyDittoNet-v1':
@@ -412,7 +411,6 @@ class HeyDittoNet:
         self.train_data_y = []
         self.frames = 0
         self.activation_time = None
-        self.pred_count = 0
 
         # import activation_requests
         if self.path == 'modules/ditto_activation/':
