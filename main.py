@@ -35,7 +35,7 @@ TFLITE = True
 MODEL_SELECT = 0  # 0 for HeyDittoNet-v2, 1 for HeyDittoNet-v1
 MODEL = ['HeyDittoNet-v1', 'HeyDittoNet-v2'][MODEL_SELECT]
 RATE = 16000
-SENSITIVITY = 0.70
+SENSITIVITY = 0.99
 
 
 class HeyDittoNet:
@@ -318,13 +318,16 @@ class HeyDittoNet:
             # garbage
             pred = None
             spect = None
-            normalized = None
-            indata = None
 
         if self.frames > 0:
             self.frames += frames
             if self.frames >= RATE/4:
                 self.frames = 0
+
+        # garbage
+        self = None
+        normalized = None
+        indata = None
 
     def get_spectrogram(self, waveform: list) -> list:
         '''
