@@ -141,8 +141,9 @@ class ActivationRequests:
             SQL.commit()
             SQL.close()
         except BaseException as e:
-            pass
-            # print(e)
+            SQL.close()
+            print(e)
+
         if self.gesture_activation:
             self.activated = 1
 
@@ -151,7 +152,6 @@ class ActivationRequests:
         Checks if the user sent a prompt from the client GUI.
         '''
         try:
-
             SQL = sqlite3.connect(f'ditto.db')
             cur = SQL.cursor()
             req = cur.execute("select * from ditto_requests")
@@ -196,4 +196,5 @@ class ActivationRequests:
                 self.activated = 1
             SQL.close()
         except BaseException as e:
-            pass
+            print(e)
+            SQL.close()

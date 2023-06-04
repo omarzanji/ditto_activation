@@ -398,7 +398,7 @@ class HeyDittoNet:
         # sampling rate
         fs = RATE
 
-        # callback reqources
+        # callback resources
         self.buffer = []
         self.train_data_x = []
         self.train_data_y = []
