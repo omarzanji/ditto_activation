@@ -142,7 +142,7 @@ class ActivationRequests:
             SQL.close()
         except BaseException as e:
             SQL.close()
-            print(e)
+            # print(e)
 
         if self.gesture_activation:
             self.activated = 1
@@ -196,5 +196,5 @@ class ActivationRequests:
                 self.activated = 1
             SQL.close()
         except BaseException as e:
-            print(e)
+            # print(e)
             SQL.close()
