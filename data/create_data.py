@@ -14,7 +14,10 @@ from pydub.playback import play
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 RATE = 16000
+
 TIME_SERIES = True
+WINDOW = int(RATE/2)
+STRIDE = int(WINDOW/4)
 
 
 def white_noise(sample, amount=0.005):
@@ -248,16 +251,25 @@ def generate_data() -> tuple:
         f'\n\ncreated {t_cnt} activation sets and {f_cnt} background sets\n\n')
 
     print('\n\nsaving x and y as .npy cache\n\n')
+
+    print('Xshape', (len(x), len(x[0]), len(
+        x[0][0]), len(x[0][0][0]), len(x[0][0][0][0])))
+
+    print('Yshape', len(y))
+    print('\n')
+
     if TIME_SERIES:
         np.save('x_data_ts.npy', x)
         np.save('y_data_ts.npy', y)
     else:
         np.save('x_data.npy', x)
         np.save('y_data.npy', y)
+
+    print('Done.')
     return x, y
 
 
-def get_spectrograms(waveform: list, time_steps=4) -> list:
+def get_spectrograms(waveform: list, stride=STRIDE) -> list:
     '''
     Function for converting 16K Hz waveform to two half-second spectrograms for TIME_SERIES model.
     ref: https://www.tensorflow.org/tutorials/audio/simple_audio
@@ -273,14 +285,14 @@ def get_spectrograms(waveform: list, time_steps=4) -> list:
         dtype=tf.float32)
     waveform = tf.cast(waveform, dtype=tf.float32)
     waveform = tf.concat([waveform, zero_padding], 0)
-    chunk_size = int(len(waveform) / time_steps)
+    chunk_size = WINDOW
     spectrograms = []
-    for i in range(0, len(waveform), chunk_size):
+    for i in range(0, len(waveform)-WINDOW, STRIDE):
         data = waveform[i:i+chunk_size]
 
         # Convert the waveform to a spectrogram via a STFT.
         spectrogram = tf.signal.stft(
-            data, frame_length=256, frame_step=80)
+            data, frame_length=256, frame_step=64)
         # Obtain the magnitude of the STFT.
         spectrogram = tf.abs(spectrogram)
         # Add a `channels` dimension, so that the spectrogram can be used
