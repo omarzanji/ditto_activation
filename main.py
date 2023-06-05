@@ -447,13 +447,14 @@ class HeyDittoNet:
                     if not self.activation_requests.mic_on:
                         self.buffer = []
                     activated = self.activation_requests.activated
-                    if activated:
-                        stream.close()
-                        return 1
                     if activated and self.reinforce:
                         self.save_reinforce_trigger()
                         stream.close()
                         return 1
+                    if activated:
+                        stream.close()
+                        return 1
+
         except KeyboardInterrupt:
             stream.close()
             return -1
@@ -465,7 +466,7 @@ class HeyDittoNet:
     def main_loop(self):
         if self.reinforce:
             while True:
-                wake = self.listen_for_name(self.reinforce)
+                wake = self.listen_for_name()
                 if wake == -1:
                     break
 
