@@ -4,6 +4,7 @@ import os
 import random
 import librosa
 import numpy as np
+from tensorflow.keras import backend as K
 
 SENSITIVITY = 0.50
 
@@ -32,6 +33,7 @@ for ndx, file in enumerate(files):
         chunk_second = ditto.normalize_audio(chunk_second)
         spect = ditto.get_spectrograms(chunk_second)
         pred = ditto.model(np.expand_dims(spect, 0))
+        K.clear_session()
         if pred[0][0] >= SENSITIVITY:
             print(f'Activated with {pred[0][0]}')
             X.append(chunk_second)

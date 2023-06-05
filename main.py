@@ -299,7 +299,7 @@ class HeyDittoNet:
                         # log new activation time
                         self.activation_time = int(time.time())
                         if self.reinforce:
-                            self.train_data_x.append(spect)
+                            self.train_data_x.append(normalized)
                             self.train_data_y.append(0)
                     else:
                         pass  # do nothing on double triggers..
@@ -310,7 +310,7 @@ class HeyDittoNet:
                     # log first activation time
                     self.activation_time = int(time.time())
                     if self.reinforce:
-                        self.train_data_x.append(spect)
+                        self.train_data_x.append(normalized)
                         self.train_data_y.append(0)
             else:
                 time.sleep(0.001)
@@ -392,15 +392,15 @@ class HeyDittoNet:
         return spectrograms
 
     def save_reinforce_trigger(self):
-        with open(f'{self.path}data/reinforced_data/conf.json', 'r') as f:
+        with open(f'{self.path}data/reinforce_background/conf.json', 'r') as f:
             conf = json.load(f)
             sesssion_number = conf['sessions_total']
         print('saving to cache...')
         np.save(
-            f'{self.path}data/reinforced_data/{sesssion_number}_train_data_x.npy', self.train_data_x)
+            f'{self.path}data/reinforce_background/{sesssion_number}_train_data_x.npy', self.train_data_x)
         np.save(
-            f'{self.path}data/reinforced_data/{sesssion_number}_train_data_y.npy', self.train_data_y)
-        with open(f'{self.path}data/reinforced_data/conf.json', 'w') as f:
+            f'{self.path}data/reinforce_background/{sesssion_number}_train_data_y.npy', self.train_data_y)
+        with open(f'{self.path}data/reinforce_background/conf.json', 'w') as f:
             conf['sessions_total'] = sesssion_number+1
             json.dump(conf, f)
 
