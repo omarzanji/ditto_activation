@@ -16,7 +16,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 RATE = 16000
 
 TIME_SERIES = True
-WINDOW = int(RATE/2)
+WINDOW = int(RATE/4)
 STRIDE = int(WINDOW/4)
 
 
@@ -111,6 +111,7 @@ def generate_data() -> tuple:
     random.shuffle(activation_set)
     random.shuffle(background_set)
     # random.shuffle(background_set) # probably shouldn't shuffle for RNN to understand people talking in order
+    # count = 0
     for activation_phrase, background_noise in zip(activation_set, background_set):
         if 'Neural2' in activation_phrase:
             continue  # contains a lot of dirty samples...
@@ -193,7 +194,7 @@ def generate_data() -> tuple:
 
         x.append(spect)
         y.append(0)
-        N = 4000
+        N = 2000
         if count < N or\
                 'Neural' in background_noise or 'Wavenet' in background_noise or\
                 'Standard' in background_noise or 'News' in background_noise:  # apply augmentations to N false samples
@@ -292,7 +293,7 @@ def get_spectrograms(waveform: list, stride=STRIDE) -> list:
 
         # Convert the waveform to a spectrogram via a STFT.
         spectrogram = tf.signal.stft(
-            data, frame_length=256, frame_step=64)
+            data, frame_length=128, frame_step=80)
         # Obtain the magnitude of the STFT.
         spectrogram = tf.abs(spectrogram)
         # Add a `channels` dimension, so that the spectrogram can be used

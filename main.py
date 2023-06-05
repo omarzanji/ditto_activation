@@ -35,7 +35,7 @@ TFLITE = True
 MODEL_SELECT = 0  # 0 for HeyDittoNet-v2, 1 for HeyDittoNet-v1
 MODEL = ['HeyDittoNet-v1', 'HeyDittoNet-v2'][MODEL_SELECT]
 RATE = 16000
-WINDOW = int(RATE/2)
+WINDOW = int(RATE/4)
 STRIDE = int(WINDOW/4)
 SENSITIVITY = 0.99
 
@@ -149,7 +149,7 @@ class HeyDittoNet:
             return model
         elif self.model_type == 'HeyDittoNet-v1':
             self.early_stop_callback = tf.keras.callbacks.EarlyStopping(
-                monitor='loss', patience=4, restore_best_weights=True)
+                monitor='loss', patience=3, restore_best_weights=True)
 
             N = 32
 
@@ -379,7 +379,7 @@ class HeyDittoNet:
 
             # Convert the waveform to a spectrogram via a STFT.
             spectrogram = tf.signal.stft(
-                data, frame_length=256, frame_step=64)
+                data, frame_length=128, frame_step=80)
             # Obtain the magnitude of the STFT.
             spectrogram = tf.abs(spectrogram)
             # Add a `channels` dimension, so that the spectrogram can be used
