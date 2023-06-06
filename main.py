@@ -35,9 +35,9 @@ TFLITE = True
 MODEL_SELECT = 0  # 0 for HeyDittoNet-v2, 1 for HeyDittoNet-v1
 MODEL = ['HeyDittoNet-v1', 'HeyDittoNet-v2'][MODEL_SELECT]
 RATE = 16000
-WINDOW = int(RATE/4)
+WINDOW = int(RATE/2)
 STRIDE = int(WINDOW/2)
-SENSITIVITY = 0.70
+SENSITIVITY = 0.90
 
 
 class HeyDittoNet:

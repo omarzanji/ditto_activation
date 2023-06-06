@@ -16,7 +16,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 RATE = 16000
 
 TIME_SERIES = True
-WINDOW = int(RATE/4)
+WINDOW = int(RATE/2)
 STRIDE = int(WINDOW/2)
 
 
