@@ -29,15 +29,15 @@ import sounddevice as sd
 # supress tf
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-TRAIN = False
+TRAIN = True
 REINFORCE = False
 TFLITE = True
 MODEL_SELECT = 0  # 0 for HeyDittoNet-v2, 1 for HeyDittoNet-v1
 MODEL = ['HeyDittoNet-v1', 'HeyDittoNet-v2'][MODEL_SELECT]
 RATE = 16000
 WINDOW = int(RATE/4)
-STRIDE = int(WINDOW/4)
-SENSITIVITY = 0.99
+STRIDE = int(WINDOW/2)
+SENSITIVITY = 0.70
 
 
 class HeyDittoNet:

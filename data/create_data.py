@@ -17,7 +17,7 @@ RATE = 16000
 
 TIME_SERIES = True
 WINDOW = int(RATE/4)
-STRIDE = int(WINDOW/4)
+STRIDE = int(WINDOW/2)
 
 
 def white_noise(sample, amount=0.005):
@@ -194,7 +194,7 @@ def generate_data() -> tuple:
 
         x.append(spect)
         y.append(0)
-        N = 2000
+        N = 4000
         if count < N or\
                 'Neural' in background_noise or 'Wavenet' in background_noise or\
                 'Standard' in background_noise or 'News' in background_noise:  # apply augmentations to N false samples
