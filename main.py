@@ -29,14 +29,14 @@ import sounddevice as sd
 # supress tf
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-TRAIN = False
+TRAIN = True
 REINFORCE = False
 TFLITE = True
 MODEL_SELECT = 0  # 0 for HeyDittoNet-v2, 1 for HeyDittoNet-v1
 MODEL = ['HeyDittoNet-v1', 'HeyDittoNet-v2'][MODEL_SELECT]
 RATE = 16000
-WINDOW = int(RATE/2)
-STRIDE = int(WINDOW/2)
+WINDOW = int(RATE/4)
+STRIDE = int((RATE - WINDOW)/4)
 SENSITIVITY = 0.90
 
 
@@ -155,7 +155,7 @@ class HeyDittoNet:
 
             conv_model = Sequential()
 
-            conv_model.add(layers.Resizing(32, 32))
+            conv_model.add(layers.Resizing(30, 30))
             conv_model.add(layers.Normalization()),
 
             conv_model.add(layers.Conv2D(
@@ -379,7 +379,7 @@ class HeyDittoNet:
 
             # Convert the waveform to a spectrogram via a STFT.
             spectrogram = tf.signal.stft(
-                data, frame_length=128, frame_step=80)
+                data, frame_length=255, frame_step=128)
             # Obtain the magnitude of the STFT.
             spectrogram = tf.abs(spectrogram)
             # Add a `channels` dimension, so that the spectrogram can be used

@@ -16,8 +16,8 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 RATE = 16000
 
 TIME_SERIES = True
-WINDOW = int(RATE/2)
-STRIDE = int(WINDOW/2)
+WINDOW = int(RATE/4)
+STRIDE = int((RATE - WINDOW)/4)
 
 
 def white_noise(sample, amount=0.005):
@@ -293,7 +293,7 @@ def get_spectrograms(waveform: list, stride=STRIDE) -> list:
 
         # Convert the waveform to a spectrogram via a STFT.
         spectrogram = tf.signal.stft(
-            data, frame_length=128, frame_step=80)
+            data, frame_length=255, frame_step=128)
         # Obtain the magnitude of the STFT.
         spectrogram = tf.abs(spectrogram)
         # Add a `channels` dimension, so that the spectrogram can be used
