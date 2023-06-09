@@ -120,18 +120,14 @@ def generate_data() -> tuple:
         audio = [normalize_audio(activation_phrase)]
         # data augmentation
         audio_quiet = lower_volume(
-            activation_phrase, db=np.random.randint(10, 15))
+            activation_phrase, db=random.uniform(10, 15))
         # audio_really_quiet = lower_volume(activation_phrase, db=20)
         # audio_very_quiet = lower_volume(activation_phrase, db=30)
-        audio_noise = white_noise(audio[0], amount=random.uniform(0.002, 0.1))
+        audio_noise = white_noise(audio[0], amount=random.uniform(0.002, 0.4))
         # audio_stretch_low = stretch(audio[0], rate=random.uniform(0.88, 0.99))
         audio_stretch_high = stretch(audio[0], rate=random.uniform(1.1, 1.3))
         audio_downsampled = downsample_audio(audio[0])
         combined_audio = combine_with(activation_phrase, background_noise)
-        # print(audio[0])
-        # print(audio_quiet)
-        # print(get_spectrogram(audio[0]))
-        # print(get_spectrogram(audio_normalized))
         # sounddevice.play(audio[0], samplerate=16000)
         # time.sleep(1)
         # sounddevice.play(audio_downsampled, samplerate=16000)
@@ -169,14 +165,8 @@ def generate_data() -> tuple:
             y.append(1)  # activate
             x.append(get_spectrogram(audio_quiet))
             y.append(1)
-            # x.append(get_spectrogram(audio_really_quiet))
-            # y.append(1)
-            # x.append(get_spectrogram(audio_very_quiet))
-            # y.append(1)
             x.append(get_spectrogram(audio_noise))
             y.append(1)
-            # x.append(get_spectrogram(audio_stretch_low))
-            # y.append(1)
             x.append(get_spectrogram(audio_stretch_high))
             y.append(1)
             x.append(get_spectrogram(audio_downsampled))
@@ -196,28 +186,35 @@ def generate_data() -> tuple:
 
         x.append(spect)
         y.append(0)
-        N = 4000
-        if count < N or\
+        N = 6000
+        if (count < N and count > 1) or\
                 'Neural' in background_noise or 'Wavenet' in background_noise or\
                 'Standard' in background_noise or 'News' in background_noise:  # apply augmentations to N false samples
             audio_noise = white_noise(
-                audio[0], amount=random.uniform(0.002, 0.2))
+                audio[0], amount=random.uniform(0.002, 0.3))
 
             audio_quiet = lower_volume(background_noise, db=np.random.randint(
                 10, 20)+np.random.rand())  # Decreases volume
+
+            combined_audio = combine_with(
+                background_set[ndx-1], background_noise)
 
             if TIME_SERIES:
                 x.append(get_spectrograms(audio_noise))
                 y.append(0)
                 x.append(get_spectrograms(audio_quiet))
                 y.append(0)
+                x.append(get_spectrograms(combined_audio))
+                y.append(0)
             else:
                 x.append(get_spectrogram(audio_noise))
                 y.append(0)
                 x.append(get_spectrogram(audio_quiet))
                 y.append(0)
+                x.append(get_spectrogram(combined_audio))
+                y.append(0)
 
-            f_cnt += 3  # false class count
+            f_cnt += 4  # false class count
 
             # sounddevice.play(audio[0], samplerate=16000)
             # time.sleep(1)
@@ -225,10 +222,10 @@ def generate_data() -> tuple:
             # sounddevice.play(audio_noise, samplerate=16000)
             # time.sleep(1)
 
-            # sounddevice.play(audio_loud, samplerate=16000)
+            # sounddevice.play(audio_quiet, samplerate=16000)
             # time.sleep(1)
 
-            # sounddevice.play(audio_quiet, samplerate=16000)
+            # sounddevice.play(combined_audio, samplerate=16000)
             # time.sleep(1)
         else:
             f_cnt += 1  # false class count
@@ -247,11 +244,22 @@ def generate_data() -> tuple:
         for ndx, sample in enumerate(additional_x):
             if TIME_SERIES:
                 spect = get_spectrograms(sample)
+                spect_noise = get_spectrograms(
+                    white_noise(sample, random.uniform(0.002, 0.3)))
+                spect_downsampled = get_spectrograms(downsample_audio(sample))
             else:
                 spect = get_spectrogram(sample)
+                spect_noise = get_spectrogram(
+                    white_noise(sample, random.uniform(0.002, 0.3)))
+                spect_downsampled = get_spectrogram(downsample_audio(sample))
+
             x.append(spect)
-            y.append(additional_y[ndx])
-            f_cnt += 1
+            y.append(additional_y[ndx])  # alwaus zero
+            x.append(spect_noise)
+            y.append(additional_y[ndx])  # alwaus zero
+            x.append(spect_downsampled)
+            y.append(additional_y[ndx])  # alwaus zero
+            f_cnt += 3
 
     print(
         f'\n\ncreated {t_cnt} activation sets and {f_cnt} background sets\n\n')

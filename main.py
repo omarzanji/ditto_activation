@@ -37,7 +37,7 @@ MODEL = ['HeyDittoNet-v1', 'HeyDittoNet-v2'][MODEL_SELECT]
 RATE = 16000
 WINDOW = int(RATE/4)
 STRIDE = int((RATE - WINDOW)/4)
-SENSITIVITY = 0.90
+SENSITIVITY = 0.99
 
 
 class HeyDittoNet:
@@ -116,7 +116,7 @@ class HeyDittoNet:
                 layers.BatchNormalization(),
                 layers.MaxPooling2D(pool_size=(1, 2)),
 
-                layers.Conv2D(64, (3, 3), strides=(2, 2),
+                layers.Conv2D(55, (3, 3), strides=(2, 2),
                               padding="same", activation="relu"),
                 layers.BatchNormalization(),
                 layers.MaxPooling2D(pool_size=(1, 2), padding='same'),
@@ -126,12 +126,13 @@ class HeyDittoNet:
                 layers.BatchNormalization(),
 
                 layers.Reshape((T, CNN_OUT)),
-
-                layers.LSTM(
-                    units=16,
-                    input_shape=(None, T, CNN_OUT),
-                    return_sequences=False,
-                    activation='tanh'
+                layers.Bidirectional(
+                    layers.LSTM(
+                        units=16,
+                        input_shape=(None, T, CNN_OUT),
+                        return_sequences=False,
+                        activation='tanh'
+                    )
                 ),
                 # layers.LSTM(16, return_sequences=False, activation='tanh'),
 

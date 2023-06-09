@@ -4,3 +4,4 @@ sounddevice
 scikit-learn
 matplotlib
 numpy
+python_speech_features
