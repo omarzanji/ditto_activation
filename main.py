@@ -22,9 +22,9 @@ from tensorflow.keras import backend as K
 
 from matplotlib import pyplot as plt
 
-# import queue
 import time
 import sounddevice as sd
+from python_speech_features import logfbank
 
 # supress tf
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -37,7 +37,7 @@ MODEL = ['HeyDittoNet-v1', 'HeyDittoNet-v2'][MODEL_SELECT]
 RATE = 16000
 WINDOW = int(RATE/4)
 STRIDE = int((RATE - WINDOW)/4)
-SENSITIVITY = 0.99
+SENSITIVITY = 0.90
 
 
 class HeyDittoNet:
@@ -331,7 +331,7 @@ class HeyDittoNet:
         normalized = None
         indata = None
 
-    def get_spectrogram(waveform: list) -> list:
+    def get_spectrogram(self, waveform: list) -> list:
         '''
         Function for converting 16K Hz waveform to spectrogram.
         ref: https://www.tensorflow.org/tutorials/audio/simple_audio
@@ -359,7 +359,7 @@ class HeyDittoNet:
         # spectrogram = spectrogram[..., tf.newaxis]
         fbank_feat = logfbank(equal_length, 16000, nfilt=32)
         spectrogram = fbank_feat[..., tf.newaxis]
-        return spectrogram
+        return np.array(spectrogram).astype('float32')
 
     def get_spectrograms(self, waveform: list, stride=STRIDE) -> list:
         '''
