@@ -32,12 +32,12 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 TRAIN = False
 REINFORCE = False
 TFLITE = True
-MODEL_SELECT = 0  # 0 for HeyDittoNet-v2, 1 for HeyDittoNet-v1
+MODEL_SELECT = 1  # 0 for HeyDittoNet-v2, 1 for HeyDittoNet-v1
 MODEL = ['HeyDittoNet-v1', 'HeyDittoNet-v2'][MODEL_SELECT]
 RATE = 16000
 WINDOW = int(RATE/4)
 STRIDE = int((RATE - WINDOW)/4)
-SENSITIVITY = 0.90
+SENSITIVITY = 0.99
 
 
 class HeyDittoNet:
@@ -103,33 +103,33 @@ class HeyDittoNet:
             self.early_stop_callback = tf.keras.callbacks.EarlyStopping(
                 monitor='loss', patience=3, restore_best_weights=True)
             xshape = self.x.shape[1:]
-            T = 2  # number of LSTM time units
+            T = 4  # number of LSTM time units
             CNN_OUT = 64
-            LSTM_FEATURES = int(T*CNN_OUT)
+            # LSTM_FEATURES = int(T*CNN_OUT)
             model = Sequential([
                 layers.Input(shape=xshape),
-                layers.Resizing(64, 64),
+                layers.Resizing(32, 32),
                 layers.Normalization(),
 
                 layers.Conv2D(32, (5, 5), strides=(2, 2),
-                              padding="valid", activation="relu"),
+                              padding="same", activation="relu"),
                 layers.BatchNormalization(),
-                layers.MaxPooling2D(pool_size=(2, 2)),
+                layers.MaxPooling2D(pool_size=(1, 2)),
 
                 layers.Conv2D(64, (3, 3), strides=(2, 2),
-                              padding="valid", activation="relu"),
+                              padding="same", activation="relu"),
                 layers.BatchNormalization(),
-                layers.MaxPooling2D(pool_size=(2, 2), padding='same'),
+                layers.MaxPooling2D(pool_size=(1, 2), padding='same'),
 
-                layers.Conv2D(CNN_OUT, (3, 3), strides=(3, 3),
+                layers.Conv2D(CNN_OUT, (3, 3), strides=(2, 2),
                               padding="same", activation="relu"),
                 layers.BatchNormalization(),
 
-                layers.Reshape((T, LSTM_FEATURES)),
+                layers.Reshape((T, CNN_OUT)),
 
                 layers.LSTM(
                     units=16,
-                    input_shape=(None, T, LSTM_FEATURES),
+                    input_shape=(None, T, CNN_OUT),
                     return_sequences=False,
                     activation='tanh'
                 ),
@@ -331,11 +331,12 @@ class HeyDittoNet:
         normalized = None
         indata = None
 
-    def get_spectrogram(self, waveform: list) -> list:
+    def get_spectrogram(waveform: list) -> list:
         '''
         Function for converting 16K Hz waveform to spectrogram.
         ref: https://www.tensorflow.org/tutorials/audio/simple_audio
         '''
+
         # Zero-padding for an audio waveform with less than 16,000 samples.
         input_len = RATE
         waveform = waveform[:input_len]
@@ -348,14 +349,16 @@ class HeyDittoNet:
         # clips are of the same length.
         equal_length = tf.concat([waveform, zero_padding], 0)
         # Convert the waveform to a spectrogram via a STFT.
-        spectrogram = tf.signal.stft(
-            equal_length, frame_length=255, frame_step=128)
+        # spectrogram = tf.signal.stft(
+        #     equal_length, frame_length=255, frame_step=128)
         # Obtain the magnitude of the STFT.
-        spectrogram = tf.abs(spectrogram)
+        # spectrogram = tf.abs(spectrogram)
         # Add a `channels` dimension, so that the spectrogram can be used
         # as image-like input data with convolution layers (which expect
         # shape (`batch_size`, `height`, `width`, `channels`).
-        spectrogram = spectrogram[..., tf.newaxis]
+        # spectrogram = spectrogram[..., tf.newaxis]
+        fbank_feat = logfbank(equal_length, 16000, nfilt=32)
+        spectrogram = fbank_feat[..., tf.newaxis]
         return spectrogram
 
     def get_spectrograms(self, waveform: list, stride=STRIDE) -> list:

@@ -9,13 +9,15 @@ import sounddevice
 from pydub import AudioSegment
 from pydub import effects
 from pydub.playback import play
+from python_speech_features import logfbank
+
 
 # supress tf
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 RATE = 16000
 
-TIME_SERIES = True
+TIME_SERIES = False
 WINDOW = int(RATE/4)
 STRIDE = int((RATE - WINDOW)/4)
 
@@ -243,7 +245,10 @@ def generate_data() -> tuple:
         additional_y = np.load(
             f'{reinforce_dir}{session}_train_data_y.npy')
         for ndx, sample in enumerate(additional_x):
-            spect = get_spectrograms(sample)
+            if TIME_SERIES:
+                spect = get_spectrograms(sample)
+            else:
+                spect = get_spectrogram(sample)
             x.append(spect)
             y.append(additional_y[ndx])
             f_cnt += 1
@@ -253,9 +258,12 @@ def generate_data() -> tuple:
 
     print('\n\nsaving x and y as .npy cache\n\n')
 
-    print('Xshape', (len(x), len(x[0]), len(
-        x[0][0]), len(x[0][0][0]), len(x[0][0][0][0])))
-
+    if TIME_SERIES:
+        print('Xshape', (len(x), len(x[0]), len(
+            x[0][0]), len(x[0][0][0]), len(x[0][0][0][0])))
+    else:
+        print('Xshape', (len(x), len(x[0]), len(
+            x[0][0]), len(x[0][0][0])))
     print('Yshape', len(y))
     print('\n')
 
@@ -275,8 +283,6 @@ def get_spectrograms(waveform: list, stride=STRIDE) -> list:
     Function for converting 16K Hz waveform to two half-second spectrograms for TIME_SERIES model.
     ref: https://www.tensorflow.org/tutorials/audio/simple_audio
     '''
-
-    import tensorflow as tf
 
     # Zero-padding for an audio waveform with less than 16,000 samples.
     input_len = RATE
@@ -300,7 +306,6 @@ def get_spectrograms(waveform: list, stride=STRIDE) -> list:
         # as image-like input data with convolution layers (which expect
         # shape (`batch_size`, `height`, `width`, `channels`).
         spectrogram = spectrogram[..., tf.newaxis]
-
         spectrograms.append(spectrogram)
 
     return spectrograms
@@ -311,8 +316,6 @@ def get_spectrogram(waveform: list) -> list:
     Function for converting 16K Hz waveform to spectrogram.
     ref: https://www.tensorflow.org/tutorials/audio/simple_audio
     '''
-
-    import tensorflow as tf
 
     # Zero-padding for an audio waveform with less than 16,000 samples.
     input_len = RATE
@@ -326,14 +329,16 @@ def get_spectrogram(waveform: list) -> list:
     # clips are of the same length.
     equal_length = tf.concat([waveform, zero_padding], 0)
     # Convert the waveform to a spectrogram via a STFT.
-    spectrogram = tf.signal.stft(
-        equal_length, frame_length=255, frame_step=128)
+    # spectrogram = tf.signal.stft(
+    #     equal_length, frame_length=255, frame_step=128)
     # Obtain the magnitude of the STFT.
-    spectrogram = tf.abs(spectrogram)
+    # spectrogram = tf.abs(spectrogram)
     # Add a `channels` dimension, so that the spectrogram can be used
     # as image-like input data with convolution layers (which expect
     # shape (`batch_size`, `height`, `width`, `channels`).
-    spectrogram = spectrogram[..., tf.newaxis]
+    # spectrogram = spectrogram[..., tf.newaxis]
+    fbank_feat = logfbank(equal_length, 16000, nfilt=32)
+    spectrogram = fbank_feat[..., tf.newaxis]
     return spectrogram
 
 
