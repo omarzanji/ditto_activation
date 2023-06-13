@@ -8,7 +8,7 @@ from tensorflow.keras import backend as K
 
 SENSITIVITY = 0.50
 
-ditto = HeyDittoNet(tflite=False)
+ditto = HeyDittoNet(tflite=False, model_type='HeyDittoNet-v2')
 reinforce_conf_dir = 'data/reinforce_background/conf.json'
 reinforce_dir = 'data/reinforce_background/'
 reinforce_conf = json.load(open(reinforce_conf_dir, 'r'))
@@ -31,7 +31,7 @@ for ndx, file in enumerate(files):
     for i in range(0, int(y.size), chunk_size):  # iterate through each second
         chunk_second = y[i:i+chunk_size+1]
         chunk_second = ditto.normalize_audio(chunk_second)
-        spect = ditto.get_spectrograms(chunk_second)
+        spect = ditto.get_spectrogram(chunk_second)
         pred = ditto.model(np.expand_dims(spect, 0))
         K.clear_session()
         if pred[0][0] >= SENSITIVITY:

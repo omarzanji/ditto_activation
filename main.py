@@ -29,7 +29,7 @@ from python_speech_features import logfbank
 # supress tf
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-TRAIN = False
+TRAIN = True
 REINFORCE = False
 TFLITE = True
 MODEL_SELECT = 1  # 0 for HeyDittoNet-v2, 1 for HeyDittoNet-v1
@@ -45,7 +45,7 @@ class HeyDittoNet:
     HeyDittoNet is a model for recognizing "Hey Ditto" from machine's default mic.
     '''
 
-    def __init__(self, train=False, model_type='HeyDittoNet-v1', tflite=True, path='', reinforce=REINFORCE):
+    def __init__(self, train=False, model_type='HeyDittoNet-v2', tflite=True, path='', reinforce=REINFORCE):
         self.train = train
         self.model_type = model_type
         self.tflite = tflite
@@ -104,7 +104,7 @@ class HeyDittoNet:
                 monitor='loss', patience=3, restore_best_weights=True)
             xshape = self.x.shape[1:]
             T = 4  # number of LSTM time units
-            CNN_OUT = 64
+            CNN_OUT = 60
             # LSTM_FEATURES = int(T*CNN_OUT)
             model = Sequential([
                 layers.Input(shape=xshape),
@@ -136,7 +136,7 @@ class HeyDittoNet:
                 ),
                 # layers.LSTM(16, return_sequences=False, activation='tanh'),
 
-                layers.Dense(32, activation='relu'),
+                layers.Dense(64, activation='relu'),
 
                 layers.Dropout(0.2),
 
