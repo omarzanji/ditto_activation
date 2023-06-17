@@ -80,11 +80,16 @@ def normalize_audio(sample):
 
 
 def combine_with(activation, background):
-    decrease_amount = np.random.uniform(2.5, 8)
-    a_audio = AudioSegment.from_wav(activation)
+    # amount to decrease background sample by
+    decrease_amount = np.random.uniform(1, 4)
+    # 30% chance for music sample to be louder than activation audio
+    da = np.random.uniform(1, 2) if random.random() >= 0.7 and 'music' in background \
+        else 0
+    db = decrease_amount if da == 0 else 0
+    a_audio = AudioSegment.from_wav(activation) - da
     a_audio_norm = effects.normalize(a_audio)
     b_audio = AudioSegment.from_wav(background)
-    b_audio_norm = effects.normalize(b_audio) - decrease_amount
+    b_audio_norm = effects.normalize(b_audio) - db
     audio = a_audio_norm.overlay(b_audio_norm)
     samples = audio.get_array_of_samples()  # write to samples
     return np.array(samples).astype(np.float32, order='C') / 32768.0
@@ -123,16 +128,19 @@ def generate_data() -> tuple:
             activation_phrase, db=random.uniform(10, 15))
         # audio_really_quiet = lower_volume(activation_phrase, db=20)
         # audio_very_quiet = lower_volume(activation_phrase, db=30)
-        audio_noise = white_noise(audio[0], amount=random.uniform(0.002, 0.4))
+        audio_noise1 = white_noise(audio[0], amount=random.uniform(0.002, 0.4))
+        audio_noise2 = white_noise(audio[0], amount=random.uniform(0.002, 0.4))
         # audio_stretch_low = stretch(audio[0], rate=random.uniform(0.88, 0.99))
         audio_stretch_high = stretch(audio[0], rate=random.uniform(1.1, 1.3))
         audio_downsampled = downsample_audio(audio[0])
-        combined_audio = combine_with(activation_phrase, background_noise)
+        combined_audio1 = combine_with(activation_phrase, background_noise)
         # sounddevice.play(audio[0], samplerate=16000)
         # time.sleep(1)
         # sounddevice.play(audio_downsampled, samplerate=16000)
         # time.sleep(1)
-        # sounddevice.play(audio_noise, samplerate=16000)
+        # sounddevice.play(audio_noise1, samplerate=16000)
+        # time.sleep(1)
+        # sounddevice.play(audio_noise2, samplerate=16000)
         # time.sleep(1)
         # sounddevice.play(audio_stretch_low, samplerate=16000)
         # time.sleep(1)
@@ -142,21 +150,24 @@ def generate_data() -> tuple:
         # time.sleep(1)
         # sounddevice.play(audio_really_quiet, samplerate=16000)
         # time.sleep(2)
-        # sounddevice.play(combined_audio, samplerate=16000)
+        # sounddevice.play(combined_audio1, samplerate=16000)
         # time.sleep(1)
+
         # exit()
         if TIME_SERIES:
             x.append(get_spectrograms(audio[0]))
             y.append(1)  # activate
             x.append(get_spectrograms(audio_quiet))
             y.append(1)
-            x.append(get_spectrograms(audio_noise))
+            x.append(get_spectrograms(audio_noise1))
+            y.append(1)
+            x.append(get_spectrograms(audio_noise2))
             y.append(1)
             x.append(get_spectrograms(audio_downsampled))
             y.append(1)
             x.append(get_spectrograms(audio_stretch_high))
             y.append(1)
-            x.append(get_spectrograms(combined_audio))
+            x.append(get_spectrograms(combined_audio1))
             y.append(1)
 
         else:
@@ -165,16 +176,18 @@ def generate_data() -> tuple:
             y.append(1)  # activate
             x.append(get_spectrogram(audio_quiet))
             y.append(1)
-            x.append(get_spectrogram(audio_noise))
+            x.append(get_spectrogram(audio_noise1))
+            y.append(1)
+            x.append(get_spectrogram(audio_noise2))
             y.append(1)
             x.append(get_spectrogram(audio_stretch_high))
             y.append(1)
             x.append(get_spectrogram(audio_downsampled))
             y.append(1)
-            x.append(get_spectrogram(combined_audio))
+            x.append(get_spectrogram(combined_audio1))
             y.append(1)
 
-        t_cnt += 6  # true class count
+        t_cnt += 7  # true class count
 
     for ndx, background_noise in enumerate(background_set):
         count = ndx + 1
@@ -186,7 +199,7 @@ def generate_data() -> tuple:
 
         x.append(spect)
         y.append(0)
-        N = 6000
+        N = 8000
         if (count < N and count > 1) or\
                 'Neural' in background_noise or 'Wavenet' in background_noise or\
                 'Standard' in background_noise or 'News' in background_noise:  # apply augmentations to N false samples
@@ -196,7 +209,9 @@ def generate_data() -> tuple:
             audio_quiet = lower_volume(background_noise, db=np.random.randint(
                 10, 20)+np.random.rand())  # Decreases volume
 
-            combined_audio = combine_with(
+            combined_audio1 = combine_with(
+                background_set[ndx-1], background_noise)
+            combined_audio2 = combine_with(
                 background_set[ndx-1], background_noise)
 
             if TIME_SERIES:
@@ -204,14 +219,14 @@ def generate_data() -> tuple:
                 y.append(0)
                 x.append(get_spectrograms(audio_quiet))
                 y.append(0)
-                x.append(get_spectrograms(combined_audio))
+                x.append(get_spectrograms(combined_audio1))
                 y.append(0)
             else:
                 x.append(get_spectrogram(audio_noise))
                 y.append(0)
                 x.append(get_spectrogram(audio_quiet))
                 y.append(0)
-                x.append(get_spectrogram(combined_audio))
+                x.append(get_spectrogram(combined_audio1))
                 y.append(0)
 
             f_cnt += 4  # false class count
