@@ -83,11 +83,11 @@ def combine_with(activation, background):
     # amount to decrease background sample by
     decrease_amount = np.random.uniform(1, 4)
     # 30% chance for music sample to be louder than activation audio
-    da = np.random.uniform(1, 2) if random.random() >= 0.7 and 'music' in background \
+    da = np.random.uniform(0.5, 1) if random.random() >= 0.7 and 'music' in background \
         else 0
     db = decrease_amount if da == 0 else 0
-    a_audio = AudioSegment.from_wav(activation) - da
-    a_audio_norm = effects.normalize(a_audio)
+    a_audio = AudioSegment.from_wav(activation)
+    a_audio_norm = effects.normalize(a_audio) - da
     b_audio = AudioSegment.from_wav(background)
     b_audio_norm = effects.normalize(b_audio) - db
     audio = a_audio_norm.overlay(b_audio_norm)
@@ -150,8 +150,10 @@ def generate_data() -> tuple:
         # time.sleep(1)
         # sounddevice.play(audio_really_quiet, samplerate=16000)
         # time.sleep(2)
-        # sounddevice.play(combined_audio1, samplerate=16000)
-        # time.sleep(1)
+        # if 'music' in background_noise:
+        # print(activation_phrase)
+        #     sounddevice.play(combined_audio1, samplerate=16000)
+        #     time.sleep(1)
 
         # exit()
         if TIME_SERIES:
