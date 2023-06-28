@@ -33,7 +33,7 @@ def gen_eleven_labs_sample(text, fname='heyditto'):
     random.shuffle(voices)
     for voice in voices:
         if 'new' in voice.initialName:
-            for i in range(5):
+            for i in range(10):
                 print(
                     f'generating {voice.initialName}-{voice.voiceID} iteration {i+1}')
                 s = np.random.rand()
@@ -44,7 +44,7 @@ def gen_eleven_labs_sample(text, fname='heyditto'):
                     similarity_boost=sb
                 )
                 save_bytes_to_path(
-                    f"elvenlabs_samples/session8/{voice.voiceID}-{fname}-{i}-{s}-{sb}.wav", data)
+                    f"elvenlabs_samples/session9/{voice.voiceID}-{fname}-{i}-{s}-{sb}.wav", data)
 
 
 def list_voices(language_code=None):
@@ -122,10 +122,9 @@ def generate_heyditto_samples():
 #              "The birds are singing.",
 #              "It is a beautiful day.",
 #              "I am happy."]
-sentences = ['Hey Ditto?',
+sentences = ['Hey Ditto',
              'HEY DITTO!!!',
-             'hey ditto?',
-             'Hey! Ditto!']
+             'Hey? Ditto?']
 for sentence in sentences:
     gen_eleven_labs_sample(
         text=sentence,
@@ -150,6 +149,6 @@ for sentence in sentences:
 
 
 # gen_eleven_labs_sample(
-#     text="Alright, thank you for granting me the ability. Let's see...Dude was a young man who had just moved to the city in search of adventure. He was determined to make something out of his life and decided that he would take any job or opportunity that came his way. After several months, he eventually found himself working as a waiter at a small cafe on the outskirts of town. Despite not having much money, Dude made sure to enjoy every moment and savor all the experiences he encountered along the way.",
+#     text="Sports not only provide entertainment and a way to stay active, but they also have the ability to foster teamwork, promote healthy competition, and unite people from different backgrounds and cultures.",
 #     fname='background'
 # )

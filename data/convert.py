@@ -24,12 +24,6 @@ import time
 #     stamp = int(time.time())+ndx+1
 #     os.system(f'ffmpeg -y -i "mp3_data/{file}" -ar 16000 "raw_data/heyditto-{stamp}-{file}.wav"')
 
-# files = os.listdir('elvenlabs_samples/session8/')
-# for ndx, file in enumerate(files):
-#     stamp = int(time.time())+ndx+1
-#     os.system(
-#         f'ffmpeg -y -i "elvenlabs_samples/session8/{file}" -ar 16000 "raw_data/heyditto-{stamp}-{file}.wav"')
-
 # files = os.listdir('gtts_session3/')
 # for ndx,file in enumerate(files):
 #     stamp = int(time.time())+ndx+1
@@ -106,14 +100,20 @@ import time
 #         for i in range(0, int(y.size), chunk_size): # iterate through each second
 #             sf.write(f'raw_data/background_{file}_{i}_{stamp}.wav', y[i:i+chunk_size+1], 16000)
 
-# files = os.listdir('elvenlabs_samples/session5-background/')
+# files = os.listdir('elvenlabs_samples/session9/')
+# for ndx, file in enumerate(files):
+#     stamp = int(time.time())+ndx+1
+#     os.system(
+#         f'ffmpeg -y -i "elvenlabs_samples/session9/{file}" -ar 16000 "raw_data/heyditto-{stamp}-{file}.wav"')
+
+# files = os.listdir('elvenlabs_samples/session6-background/')
 # num_files = len(files)
 # print(f'converting {num_files} elevenlabs files to background dataset')
 # for ndx, file in enumerate(files):
 #     print(f'converting {file}')
 #     stamp = int(time.time())+ndx+1
 #     y, s = librosa.load(
-#         f'elvenlabs_samples/session5-background/{file}', sr=16000, mono=True)
+#         f'elvenlabs_samples/session6-background/{file}', sr=16000, mono=True)
 #     seconds = y.size / 16000
 #     # get size of 1 second chunk by dividing total size by sample rate
 #     chunk_size = int(y.size/seconds)
@@ -131,7 +131,7 @@ for ndx, file in enumerate(files):
     seconds = y.size / 16000
     # get size of 1 second chunk by dividing total size by sample rate
     chunk_size = int(y.size/seconds)
-    N = 1000  # sample N seconds of audio from soundscape
+    N = 3000  # sample N seconds of audio from soundscape
     # iterate through each second
     for count, i in enumerate(range(0, int(y.size), chunk_size)):
         if count+1 > N:
