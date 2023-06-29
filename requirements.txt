@@ -5,3 +5,5 @@ scikit-learn
 matplotlib
 numpy
 python_speech_features
+typing-inspect==0.8.0
+typing_extensions==4.5.0

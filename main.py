@@ -37,7 +37,7 @@ MODEL = ['HeyDittoNet-v1', 'HeyDittoNet-v2'][MODEL_SELECT]
 RATE = 16000
 WINDOW = int(RATE/4)
 STRIDE = int((RATE - WINDOW)/4)
-SENSITIVITY = 0.90
+SENSITIVITY = 0.50
 
 
 class HeyDittoNet:
@@ -103,23 +103,23 @@ class HeyDittoNet:
             self.early_stop_callback = tf.keras.callbacks.EarlyStopping(
                 monitor='loss', patience=3, restore_best_weights=True)
             xshape = self.x.shape[1:]
-            T = 4  # number of LSTM time units
+            T = 6  # number of LSTM time units
             CNN_OUT = 55  # number of CNN output channels
             LSTM_FEATURES = int(2*CNN_OUT)  # num of features per LSTM unit
             model = Sequential([
                 layers.Input(shape=xshape),
-                layers.Resizing(64, 26),
+                # layers.Resizing(64, 26),
                 layers.Normalization(),
 
-                layers.Conv2D(32, (5, 5), strides=(2, 2),
-                              padding="same", activation="relu"),
+                layers.Conv2D(32, (3, 3), strides=(1, 1),
+                              padding="valid", activation="relu"),
                 layers.BatchNormalization(),
-                layers.MaxPooling2D(pool_size=(2, 1)),
+                layers.MaxPooling2D(pool_size=(2, 2)),
 
                 layers.Conv2D(45, (3, 3), strides=(2, 2),
                               padding="same", activation="relu"),
                 layers.BatchNormalization(),
-                layers.MaxPooling2D(pool_size=(1, 2), padding='same'),
+                layers.MaxPooling2D(pool_size=(2, 2), padding='same'),
 
                 layers.Conv2D(CNN_OUT, (3, 3), strides=(2, 2),
                               padding="same", activation="relu"),
