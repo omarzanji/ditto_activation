@@ -81,15 +81,11 @@ def normalize_audio(sample):
 
 def combine_with(activation, background):
     # amount to decrease background sample by
-    decrease_amount = np.random.uniform(1, 4)
-    # 30% chance for music sample to be louder than activation audio
-    da = np.random.uniform(0.5, 1) if random.random() >= 0.7 and 'music' in background \
-        else 0
-    db = decrease_amount if da == 0 else 0
+    decrease_amount = np.random.uniform(0.5 if 'music' in background else 2, 4)
     a_audio = AudioSegment.from_wav(activation)
-    a_audio_norm = effects.normalize(a_audio) - da
+    a_audio_norm = effects.normalize(a_audio)
     b_audio = AudioSegment.from_wav(background)
-    b_audio_norm = effects.normalize(b_audio) - db
+    b_audio_norm = effects.normalize(b_audio) - decrease_amount
     audio = a_audio_norm.overlay(b_audio_norm)
     samples = audio.get_array_of_samples()  # write to samples
     return np.array(samples).astype(np.float32, order='C') / 32768.0
@@ -362,7 +358,7 @@ def get_spectrogram(waveform: list) -> list:
     # as image-like input data with convolution layers (which expect
     # shape (`batch_size`, `height`, `width`, `channels`).
     # spectrogram = spectrogram[..., tf.newaxis]
-    fbank_feat = logfbank(equal_length, 16000, nfilt=32)
+    fbank_feat = logfbank(equal_length, 16000, nfilt=26)
     spectrogram = fbank_feat[..., tf.newaxis]
     return spectrogram
 

@@ -29,7 +29,7 @@ from python_speech_features import logfbank
 # supress tf
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-TRAIN = False
+TRAIN = True
 REINFORCE = False
 TFLITE = True
 MODEL_SELECT = 1  # 0 for HeyDittoNet-v1, 1 for HeyDittoNet-v2
@@ -104,19 +104,19 @@ class HeyDittoNet:
                 monitor='loss', patience=3, restore_best_weights=True)
             xshape = self.x.shape[1:]
             T = 4  # number of LSTM time units
-            CNN_OUT = 60
-            # LSTM_FEATURES = int(T*CNN_OUT)
+            CNN_OUT = 55  # number of CNN output channels
+            LSTM_FEATURES = int(2*CNN_OUT)  # num of features per LSTM unit
             model = Sequential([
                 layers.Input(shape=xshape),
-                layers.Resizing(32, 32),
+                layers.Resizing(64, 26),
                 layers.Normalization(),
 
                 layers.Conv2D(32, (5, 5), strides=(2, 2),
                               padding="same", activation="relu"),
                 layers.BatchNormalization(),
-                layers.MaxPooling2D(pool_size=(1, 2)),
+                layers.MaxPooling2D(pool_size=(2, 1)),
 
-                layers.Conv2D(55, (3, 3), strides=(2, 2),
+                layers.Conv2D(45, (3, 3), strides=(2, 2),
                               padding="same", activation="relu"),
                 layers.BatchNormalization(),
                 layers.MaxPooling2D(pool_size=(1, 2), padding='same'),
@@ -125,11 +125,11 @@ class HeyDittoNet:
                               padding="same", activation="relu"),
                 layers.BatchNormalization(),
 
-                layers.Reshape((T, CNN_OUT)),
+                layers.Reshape((T, LSTM_FEATURES)),
                 layers.Bidirectional(
                     layers.LSTM(
                         units=16,
-                        input_shape=(None, T, CNN_OUT),
+                        input_shape=(None, T, LSTM_FEATURES),
                         return_sequences=False,
                         activation='tanh'
                     )
@@ -331,6 +331,7 @@ class HeyDittoNet:
         self = None
         normalized = None
         indata = None
+        frames = None
 
     def get_spectrogram(self, waveform: list) -> list:
         '''
@@ -358,7 +359,7 @@ class HeyDittoNet:
         # as image-like input data with convolution layers (which expect
         # shape (`batch_size`, `height`, `width`, `channels`).
         # spectrogram = spectrogram[..., tf.newaxis]
-        fbank_feat = logfbank(equal_length, 16000, nfilt=32)
+        fbank_feat = logfbank(equal_length, 16000, nfilt=26)
         spectrogram = fbank_feat[..., tf.newaxis]
         return np.array(spectrogram).astype('float32')
 
