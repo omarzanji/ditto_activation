@@ -37,7 +37,7 @@ MODEL = ['HeyDittoNet-v1', 'HeyDittoNet-v2'][MODEL_SELECT]
 RATE = 16000
 WINDOW = int(RATE/4)
 STRIDE = int((RATE - WINDOW)/4)
-SENSITIVITY = 0.50
+SENSITIVITY = 0.99
 
 
 class HeyDittoNet:
@@ -104,7 +104,7 @@ class HeyDittoNet:
                 monitor='loss', patience=3, restore_best_weights=True)
             xshape = self.x.shape[1:]
             T = 6  # number of LSTM time units
-            CNN_OUT = 55  # number of CNN output channels
+            CNN_OUT = 60  # number of CNN output channels
             LSTM_FEATURES = int(2*CNN_OUT)  # num of features per LSTM unit
             model = Sequential([
                 layers.Input(shape=xshape),
@@ -128,7 +128,7 @@ class HeyDittoNet:
                 layers.Reshape((T, LSTM_FEATURES)),
                 layers.Bidirectional(
                     layers.LSTM(
-                        units=16,
+                        units=20,
                         input_shape=(None, T, LSTM_FEATURES),
                         return_sequences=False,
                         activation='tanh'

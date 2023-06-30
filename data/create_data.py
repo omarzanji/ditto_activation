@@ -81,7 +81,7 @@ def normalize_audio(sample):
 
 def combine_with(activation, background):
     # amount to decrease background sample by
-    decrease_amount = np.random.uniform(0.5 if 'music' in background else 2, 4)
+    decrease_amount = np.random.uniform(2 if 'music' in background else 3, 6)
     a_audio = AudioSegment.from_wav(activation)
     a_audio_norm = effects.normalize(a_audio)
     b_audio = AudioSegment.from_wav(background)
@@ -124,8 +124,8 @@ def generate_data() -> tuple:
             activation_phrase, db=random.uniform(10, 15))
         # audio_really_quiet = lower_volume(activation_phrase, db=20)
         # audio_very_quiet = lower_volume(activation_phrase, db=30)
-        audio_noise1 = white_noise(audio[0], amount=random.uniform(0.002, 0.4))
-        audio_noise2 = white_noise(audio[0], amount=random.uniform(0.002, 0.4))
+        audio_noise1 = white_noise(audio[0], amount=random.uniform(0.002, 0.2))
+        audio_noise2 = white_noise(audio[0], amount=random.uniform(0.002, 0.1))
         # audio_stretch_low = stretch(audio[0], rate=random.uniform(0.88, 0.99))
         audio_stretch_high = stretch(audio[0], rate=random.uniform(1.1, 1.3))
         audio_downsampled = downsample_audio(audio[0])
