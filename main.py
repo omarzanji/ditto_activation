@@ -29,7 +29,7 @@ from python_speech_features import logfbank
 # supress tf
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-TRAIN = True
+TRAIN = False
 REINFORCE = False
 TFLITE = True
 MODEL_SELECT = 1  # 0 for HeyDittoNet-v1, 1 for HeyDittoNet-v2
@@ -103,12 +103,12 @@ class HeyDittoNet:
             self.early_stop_callback = tf.keras.callbacks.EarlyStopping(
                 monitor='loss', patience=3, restore_best_weights=True)
             xshape = self.x.shape[1:]
-            T = 6  # number of LSTM time units
+            T = 2  # number of LSTM time units
             CNN_OUT = 60  # number of CNN output channels
             LSTM_FEATURES = int(2*CNN_OUT)  # num of features per LSTM unit
             model = Sequential([
                 layers.Input(shape=xshape),
-                # layers.Resizing(64, 26),
+                layers.Resizing(26, 26),
                 layers.Normalization(),
 
                 layers.Conv2D(32, (3, 3), strides=(1, 1),
@@ -240,7 +240,7 @@ class HeyDittoNet:
         plt.xlabel('epoch')
         plt.legend(['training loss'], loc='upper right')
 
-    def normalize_audio(self, signal, rms_level=-1):
+    def normalize_audio(self, signal, rms_level=-2):
         """
         Normalize the signal.
         ref: https://superkogito.github.io/blog/2020/04/30/rms_normalization.html
