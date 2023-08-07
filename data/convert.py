@@ -121,21 +121,23 @@ import time
 #         sf.write(
 #             f'raw_data/background_{file}_{i}_{stamp}.wav', y[i:i+chunk_size+1], 16000)
 
-files = os.listdir('soundscape_audio/')
-num_files = len(files)
-print(f'converting {num_files} soundscape files to background dataset')
-for ndx, file in enumerate(files):
-    print(f'converting {file}')
-    y, s = librosa.load(
-        f'soundscape_audio/{file}', sr=16000, mono=True)
-    seconds = y.size / 16000
-    # get size of 1 second chunk by dividing total size by sample rate
-    chunk_size = int(y.size/seconds)
-    N = 3000  # sample N seconds of audio from soundscape
-    # iterate through each second
-    for count, i in enumerate(range(0, int(y.size), chunk_size)):
-        if count+1 > N:
-            break
-        sf.write(
-            f'raw_data/background_music_{file}_{i}_.wav', y[i:i+chunk_size+1], 16000)
-        count += 1
+# files = os.listdir('soundscape_audio/')
+# num_files = len(files)
+# print(f'converting {num_files} soundscape files to background dataset')
+# for ndx, file in enumerate(files):
+#     if not 'rain' in file:
+#         continue
+#     print(f'converting {file}')
+#     y, s = librosa.load(
+#         f'soundscape_audio/{file}', sr=16000, mono=True)
+#     seconds = y.size / 16000
+#     # get size of 1 second chunk by dividing total size by sample rate
+#     chunk_size = int(y.size/seconds)
+#     N = 3000  # sample N seconds of audio from soundscape
+#     # iterate through each second
+#     for count, i in enumerate(range(0, int(y.size), chunk_size)):
+#         if count+1 > N:
+#             break
+#         sf.write(
+#             f'raw_data/background_music_{file}_{i}_.wav', y[i:i+chunk_size+1], 16000)
+#         count += 1
