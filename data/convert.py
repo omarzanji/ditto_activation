@@ -100,11 +100,11 @@ import time
 #         for i in range(0, int(y.size), chunk_size): # iterate through each second
 #             sf.write(f'raw_data/background_{file}_{i}_{stamp}.wav', y[i:i+chunk_size+1], 16000)
 
-# files = os.listdir('elvenlabs_samples/session9/')
+# files = os.listdir('elvenlabs_samples/session10/')
 # for ndx, file in enumerate(files):
 #     stamp = int(time.time())+ndx+1
 #     os.system(
-#         f'ffmpeg -y -i "elvenlabs_samples/session9/{file}" -ar 16000 "raw_data/heyditto-{stamp}-{file}.wav"')
+#         f'ffmpeg -y -i "elvenlabs_samples/session10/{file}" -ar 16000 "raw_data/heyditto-{stamp}-{file}.wav"')
 
 # files = os.listdir('elvenlabs_samples/session6-background/')
 # num_files = len(files)

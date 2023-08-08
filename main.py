@@ -101,7 +101,7 @@ class HeyDittoNet:
         print('Yshape:', self.y.shape)
         if self.model_type == 'HeyDittoNet-v2':
             self.early_stop_callback = tf.keras.callbacks.EarlyStopping(
-                monitor='loss', patience=3, restore_best_weights=True)
+                monitor='loss', patience=2, restore_best_weights=True)
             xshape = self.x.shape[1:]
             T = 2  # number of LSTM time units
             CNN_OUT = 60  # number of CNN output channels

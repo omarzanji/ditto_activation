@@ -32,19 +32,19 @@ def gen_eleven_labs_sample(text, fname='heyditto'):
     voices = user.get_all_voices()
     random.shuffle(voices)
     for voice in voices:
-        if 'new' in voice.initialName:
-            for i in range(10):
-                print(
-                    f'generating {voice.initialName}-{voice.voiceID} iteration {i+1}')
-                s = np.random.rand()
-                sb = np.random.rand()
-                data = voice.generate_audio_bytes(
-                    prompt=text,
-                    stability=s,
-                    similarity_boost=sb
-                )
-                save_bytes_to_path(
-                    f"elvenlabs_samples/session9/{voice.voiceID}-{fname}-{i}-{s}-{sb}.wav", data)
+        # if 'new' in voice.initialName:
+        for i in range(2):
+            print(
+                f'generating {voice.initialName}-{voice.voiceID} iteration {i+1}')
+            s = np.random.rand()
+            sb = np.random.rand()
+            data = voice.generate_audio_bytes(
+                prompt=text,
+                stability=s,
+                similarity_boost=sb
+            )
+            save_bytes_to_path(
+                f"elvenlabs_samples/session10/{voice.voiceID}-{fname}-{i}-{s}-{sb}.wav", data)
 
 
 def list_voices(language_code=None):
@@ -122,14 +122,22 @@ def generate_heyditto_samples():
 #              "The birds are singing.",
 #              "It is a beautiful day.",
 #              "I am happy."]
-sentences = ['Hey Ditto',
-             'HEY DITTO!!!',
-             'Hey? Ditto?']
+
+# sentences = ['Hey Ditto',
+#              'HEY DITTO!!!',
+#              'Hey? Ditto?']
+
+sentences = ['The cat chased the mouse through the garden.',
+             'The sun set behind the mountains, painting the sky in shades of pink and orange.',
+             'She smiled as she watched the children play in the park.']
+
 for sentence in sentences:
     gen_eleven_labs_sample(
         text=sentence,
         fname='heyditto'
+        # fname='background'
     )
+
 # gen_eleven_labs_sample(
 #     text='Hey Ditto!',
 #     fname='heyditto-exclamation'
