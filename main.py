@@ -29,7 +29,7 @@ from python_speech_features import logfbank
 # supress tf
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-TRAIN = False
+TRAIN = True
 REINFORCE = False
 TFLITE = True
 MODEL_SELECT = 1  # 0 for HeyDittoNet-v1, 1 for HeyDittoNet-v2
@@ -111,12 +111,12 @@ class HeyDittoNet:
                 layers.Resizing(26, 26),
                 layers.Normalization(),
 
-                layers.Conv2D(32, (3, 3), strides=(1, 1),
+                layers.Conv2D(28, (3, 3), strides=(1, 1),
                               padding="valid", activation="relu"),
                 layers.BatchNormalization(),
                 layers.MaxPooling2D(pool_size=(2, 2)),
 
-                layers.Conv2D(45, (3, 3), strides=(2, 2),
+                layers.Conv2D(32, (3, 3), strides=(2, 2),
                               padding="same", activation="relu"),
                 layers.BatchNormalization(),
                 layers.MaxPooling2D(pool_size=(2, 2), padding='same'),
@@ -132,15 +132,20 @@ class HeyDittoNet:
                         input_shape=(None, T, LSTM_FEATURES),
                         return_sequences=False,
                         activation='tanh'
-                    )
+                    ), merge_mode='concat'
                 ),
                 # layers.LSTM(16, return_sequences=False, activation='tanh'),
 
                 layers.Dense(64, activation='relu'),
 
-                layers.Dropout(0.2),
+                layers.Dropout(0.3),
+
+                layers.Dense(64, activation='relu'),
+
+                layers.Dropout(0.3),
 
                 layers.Dense(1, activation='sigmoid'),
+
             ])
             model.build((None, xshape[0], xshape[1], xshape[2]))
             model.summary()

@@ -144,7 +144,7 @@ def generate_data() -> tuple:
         audio_noise1 = white_noise(audio[0], amount=random.uniform(0.002, 0.2))
         audio_noise2 = white_noise(audio[0], amount=random.uniform(0.002, 0.1))
         # audio_stretch_low = stretch(audio[0], rate=random.uniform(0.88, 0.99))
-        audio_stretch_high = stretch(audio[0], rate=random.uniform(1.1, 1.3))
+        # audio_stretch_high = stretch(audio[0], rate=random.uniform(1.1, 1.3))
         audio_downsampled = downsample_audio(audio[0])
         combined_audio1 = combine_with(activation_phrase, background_noise)
         # sounddevice.play(audio[0], samplerate=16000)
@@ -182,8 +182,8 @@ def generate_data() -> tuple:
             y.append(1)
             x.append(get_spectrograms(audio_downsampled))
             y.append(1)
-            x.append(get_spectrograms(audio_stretch_high))
-            y.append(1)
+            # x.append(get_spectrograms(audio_stretch_high))
+            # y.append(1)
             x.append(get_spectrograms(combined_audio1))
             y.append(1)
 
@@ -199,14 +199,14 @@ def generate_data() -> tuple:
             y.append(1)
             x.append(get_spectrogram(audio_noise2))
             y.append(1)
-            x.append(get_spectrogram(audio_stretch_high))
-            y.append(1)
+            # x.append(get_spectrogram(audio_stretch_high))
+            # y.append(1)
             x.append(get_spectrogram(audio_downsampled))
             y.append(1)
             x.append(get_spectrogram(combined_audio1))
             y.append(1)
 
-        t_cnt += 8  # true class count
+        t_cnt += 7  # true class count
 
     for ndx, background_noise in enumerate(background_set):
         count = ndx + 1
@@ -218,7 +218,7 @@ def generate_data() -> tuple:
 
         x.append(spect)
         y.append(0)
-        N = 8000
+        N = 6000
         if (count < N and count > 1) or\
                 'Neural' in background_noise or 'Wavenet' in background_noise or\
                 'Standard' in background_noise or 'News' in background_noise:  # apply augmentations to N false samples
