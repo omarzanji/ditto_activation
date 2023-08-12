@@ -29,7 +29,7 @@ from python_speech_features import logfbank
 # supress tf
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-TRAIN = True
+TRAIN = False
 REINFORCE = False
 TFLITE = True
 MODEL_SELECT = 1  # 0 for HeyDittoNet-v1, 1 for HeyDittoNet-v2
@@ -319,7 +319,7 @@ class HeyDittoNet:
                         self.train_data_x.append(normalized)
                         self.train_data_y.append(0)
             else:
-                time.sleep(0.001)
+                time.sleep(0.1)
                 # print(f'{pred[0][0]*100}%')
                 pass
 
