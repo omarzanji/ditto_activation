@@ -37,7 +37,7 @@ MODEL = ['HeyDittoNet-v1', 'HeyDittoNet-v2'][MODEL_SELECT]
 RATE = 16000
 WINDOW = int(RATE/4)
 STRIDE = int((RATE - WINDOW)/4)
-SENSITIVITY = 0.99
+SENSITIVITY = 0.90
 
 
 class HeyDittoNet:
@@ -319,7 +319,7 @@ class HeyDittoNet:
                         self.train_data_x.append(normalized)
                         self.train_data_y.append(0)
             else:
-                time.sleep(0.1)
+                time.sleep(0.01)
                 # print(f'{pred[0][0]*100}%')
                 pass
 
