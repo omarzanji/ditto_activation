@@ -29,7 +29,7 @@ from python_speech_features import logfbank
 # supress tf
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-TRAIN = False
+TRAIN = True
 REINFORCE = False
 TFLITE = True
 MODEL_SELECT = 1  # 0 for HeyDittoNet-v1, 1 for HeyDittoNet-v2
@@ -37,7 +37,7 @@ MODEL = ['HeyDittoNet-v1', 'HeyDittoNet-v2'][MODEL_SELECT]
 RATE = 16000
 WINDOW = int(RATE/4)
 STRIDE = int((RATE - WINDOW)/4)
-SENSITIVITY = 0.90
+SENSITIVITY = 0.99
 
 
 class HeyDittoNet:

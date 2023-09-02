@@ -135,9 +135,22 @@ def generate_data() -> tuple:
         if 'Neural2' in activation_phrase:
             continue  # contains a lot of dirty samples...
         audio = [normalize_audio(activation_phrase)]
+
+        # probability for data augmentation to keep mostly clean samples
+        if random.random() > 0.4: # only augment data 40% of the time 
+            if TIME_SERIES:
+                x.append(get_spectrograms(audio[0]))
+                y.append(1)  # activate
+            else:
+                spect = get_spectrogram(audio[0])
+                x.append(spect)
+                y.append(1)  # activate
+            t_cnt+=1
+            continue
+
         # data augmentation
         audio_quiet = lower_volume(
-            activation_phrase, db=random.uniform(10.0, 15.0))
+            activation_phrase, db=random.uniform(3.0, 9.0))
         audio_rand_pitch = rand_pitch(activation_phrase)
         # audio_really_quiet = lower_volume(activation_phrase, db=20)
         # audio_very_quiet = lower_volume(activation_phrase, db=30)
@@ -182,8 +195,6 @@ def generate_data() -> tuple:
             y.append(1)
             x.append(get_spectrograms(audio_downsampled))
             y.append(1)
-            # x.append(get_spectrograms(audio_stretch_high))
-            # y.append(1)
             x.append(get_spectrograms(combined_audio1))
             y.append(1)
 
@@ -199,8 +210,6 @@ def generate_data() -> tuple:
             y.append(1)
             x.append(get_spectrogram(audio_noise2))
             y.append(1)
-            # x.append(get_spectrogram(audio_stretch_high))
-            # y.append(1)
             x.append(get_spectrogram(audio_downsampled))
             y.append(1)
             x.append(get_spectrogram(combined_audio1))
@@ -209,7 +218,6 @@ def generate_data() -> tuple:
         t_cnt += 7  # true class count
 
     for ndx, background_noise in enumerate(background_set):
-        count = ndx + 1
         audio = [normalize_audio(background_noise)]
         if TIME_SERIES:
             spect = get_spectrograms(audio[0])
@@ -218,10 +226,8 @@ def generate_data() -> tuple:
 
         x.append(spect)
         y.append(0)
-        N = 6000
-        if (count < N and count > 1) or\
-                'Neural' in background_noise or 'Wavenet' in background_noise or\
-                'Standard' in background_noise or 'News' in background_noise:  # apply augmentations to N false samples
+        aug_prob = random.random()
+        if aug_prob > 0.6:  # apply augmentations to only 40% of background samples
             audio_noise = white_noise(
                 audio[0], amount=random.uniform(0.002, 0.3))
 
@@ -230,9 +236,6 @@ def generate_data() -> tuple:
 
             combined_audio1 = combine_with(
                 background_set[ndx-1], background_noise)
-            combined_audio2 = combine_with(
-                background_set[ndx-1], background_noise)
-
             if TIME_SERIES:
                 x.append(get_spectrograms(audio_noise))
                 y.append(0)
