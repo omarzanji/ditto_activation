@@ -137,7 +137,7 @@ def generate_data() -> tuple:
         audio = [normalize_audio(activation_phrase)]
 
         # probability for data augmentation to keep mostly clean samples
-        if random.random() > 0.4: # only augment data 40% of the time 
+        if random.random() > 0.5: # only augment data 50% of the time 
             if TIME_SERIES:
                 x.append(get_spectrograms(audio[0]))
                 y.append(1)  # activate
@@ -227,7 +227,7 @@ def generate_data() -> tuple:
         x.append(spect)
         y.append(0)
         aug_prob = random.random()
-        if aug_prob > 0.6:  # apply augmentations to only 40% of background samples
+        if aug_prob > 0.5:  # apply augmentations to 50% of background samples
             audio_noise = white_noise(
                 audio[0], amount=random.uniform(0.002, 0.3))
 
