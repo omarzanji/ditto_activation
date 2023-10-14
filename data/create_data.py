@@ -21,6 +21,10 @@ TIME_SERIES = False
 WINDOW = int(RATE/4)
 STRIDE = int((RATE - WINDOW)/4)
 
+ACTIVATION_AUGMENTATION_PERCENT = 0.5
+BACKGROUND_AUGMENTATION_PERCENT = 0.5
+REINFORCEMENT_AUGMENTATION_PERCENT = 0.5
+
 
 def white_noise(sample, amount=0.005):
     # Add white noise to sample with scaling
@@ -122,7 +126,6 @@ def generate_data() -> tuple:
 
     print(
         f'\n\nloaded {len(activation_set)} activation sets and {len(background_set)} background sets\n\n')
-    print('processing...\n')
     x = []
     y = []
 
@@ -131,13 +134,23 @@ def generate_data() -> tuple:
     random.shuffle(background_set)
     # random.shuffle(background_set) # probably shouldn't shuffle for RNN to understand people talking in order
     # count = 0
+
+    print('processing activation sets...\n')
+
+    activation_ndx = 0
     for activation_phrase, background_noise in zip(activation_set, background_set):
+
+        # print percent if divisible by 100
+        if activation_ndx % 100 == 0:
+            # print progress in terms of percent
+            print(f'activation set progress: {round(100*activation_ndx/len(activation_set), 2)}%')
+
         if 'Neural2' in activation_phrase:
             continue  # contains a lot of dirty samples...
         audio = [normalize_audio(activation_phrase)]
 
         # probability for data augmentation to keep mostly clean samples
-        if random.random() > 0.5: # only augment data 50% of the time 
+        if random.random() > ACTIVATION_AUGMENTATION_PERCENT: # only augment data ACTIVATION_AUGMENTATION_PERCENT of the time 
             if TIME_SERIES:
                 x.append(get_spectrograms(audio[0]))
                 y.append(1)  # activate
@@ -217,7 +230,18 @@ def generate_data() -> tuple:
 
         t_cnt += 7  # true class count
 
+        activation_ndx += 1
+
+    print('processing background sets...\n')
+
     for ndx, background_noise in enumerate(background_set):
+
+        # print percent if divisible by 100
+        if ndx % 100 == 0:
+            # print progress in terms of percent
+            print(f'background set progress: {round(100*ndx/len(background_set), 2)}%')
+            
+
         audio = [normalize_audio(background_noise)]
         if TIME_SERIES:
             spect = get_spectrograms(audio[0])
@@ -227,7 +251,7 @@ def generate_data() -> tuple:
         x.append(spect)
         y.append(0)
         aug_prob = random.random()
-        if aug_prob > 0.5:  # apply augmentations to 50% of background samples
+        if aug_prob > BACKGROUND_AUGMENTATION_PERCENT:  # apply augmentations to BACKGROUND_AUGMENTATION_PERCENT of background samples
             audio_noise = white_noise(
                 audio[0], amount=random.uniform(0.002, 0.3))
 
@@ -266,8 +290,10 @@ def generate_data() -> tuple:
             # time.sleep(1)
         else:
             f_cnt += 1  # false class count
+
     # if not TIME_SERIES:
     print('loading reinforcement sessions...\n')
+
     reinforce_dir = 'reinforce_background/'
     with open(f'{reinforce_dir}conf.json', 'r') as f:
         conf = json.load(f)
@@ -279,24 +305,35 @@ def generate_data() -> tuple:
         additional_y = np.load(
             f'{reinforce_dir}{session}_train_data_y.npy')
         for ndx, sample in enumerate(additional_x):
-            if TIME_SERIES:
-                spect = get_spectrograms(sample)
-                spect_noise = get_spectrograms(
-                    white_noise(sample, random.uniform(0.002, 0.3)))
-                spect_downsampled = get_spectrograms(downsample_audio(sample))
-            else:
-                spect = get_spectrogram(sample)
-                spect_noise = get_spectrogram(
-                    white_noise(sample, random.uniform(0.002, 0.3)))
-                spect_downsampled = get_spectrogram(downsample_audio(sample))
+            aug_prob = random.random()
+            if aug_prob > REINFORCEMENT_AUGMENTATION_PERCENT:  # apply augmentations to REINFORCEMENT_AUGMENTATION_PERCENT of background samples
+                if TIME_SERIES:
+                    spect = get_spectrograms(sample)
+                    spect_noise = get_spectrograms(
+                        white_noise(sample, random.uniform(0.002, 0.3)))
+                    spect_downsampled = get_spectrograms(downsample_audio(sample))
+                else:
+                    spect = get_spectrogram(sample)
+                    spect_noise = get_spectrogram(
+                        white_noise(sample, random.uniform(0.002, 0.3)))
+                    spect_downsampled = get_spectrogram(downsample_audio(sample))
 
-            x.append(spect)
-            y.append(additional_y[ndx])  # alwaus zero
-            x.append(spect_noise)
-            y.append(additional_y[ndx])  # alwaus zero
-            x.append(spect_downsampled)
-            y.append(additional_y[ndx])  # alwaus zero
-            f_cnt += 3
+                x.append(spect)
+                y.append(additional_y[ndx])  # alwaus zero
+                x.append(spect_noise)
+                y.append(additional_y[ndx])  # alwaus zero
+                x.append(spect_downsampled)
+                y.append(additional_y[ndx])  # alwaus zero
+                f_cnt += 3
+            else:
+                if TIME_SERIES:
+                    spect = get_spectrograms(sample)
+                else:
+                    spect = get_spectrogram(sample)
+                x.append(spect)
+                y.append(additional_y[ndx])  # alwaus zero
+                f_cnt += 1
+
 
     print(
         f'\n\ncreated {t_cnt} activation sets and {f_cnt} background sets\n\n')

@@ -7,7 +7,7 @@ import json
 import soundfile as sf
 import soundfile
 import io
-
+import openai
 
 def save_bytes_to_path(filepath: str, audioData: bytes) -> None:
     """
@@ -21,30 +21,45 @@ def save_bytes_to_path(filepath: str, audioData: bytes) -> None:
     sf.write(fp, tempSoundFile.read(), tempSoundFile.samplerate)
 
 
-def gen_eleven_labs_sample(text, fname='heyditto'):
+def gen_eleven_labs_sample(fname:str, session_num:int, sentences:list):
+
     key = ''
     with open('api_key.json', 'r') as f:
         key = json.load(f)['key']
     if key == '':
         return 'Needs API Key'
+    
+    if 'heyditto' in fname:
+        if not os.path.exists(f'elvenlabs_samples/session{session_num}'): 
+            os.mkdir(f'elvenlabs_samples/session{session_num}')
+    else:
+        if not os.path.exists(f'elvenlabs_samples/session{session_num}-background'): 
+            os.mkdir(f'elvenlabs_samples/session{session_num}-background')
 
     user = ElevenLabsUser(key)
     voices = user.get_all_voices()
     random.shuffle(voices)
     for voice in voices:
         # if 'new' in voice.initialName:
-        for i in range(2):
+        for i in range(5):
             print(
                 f'generating {voice.initialName}-{voice.voiceID} iteration {i+1}')
             s = np.random.rand()
             sb = np.random.rand()
-            data = voice.generate_audio_bytes(
+
+            random.shuffle(sentences)
+            text = sentences[0]
+            
+            data = voice.generate_audio_v2(
                 prompt=text,
-                stability=s,
-                similarity_boost=sb
+                generationOptions=GenerationOptions(stability=s, similarity_boost=sb)
             )
-            save_bytes_to_path(
-                f"elvenlabs_samples/session10/{voice.voiceID}-{fname}-{i}-{s}-{sb}.wav", data)
+            if 'background' in fname:
+                save_bytes_to_path(
+                    f"elvenlabs_samples/session{session_num}-background/{voice.voiceID}-{fname}-{i}-{s}-{sb}.wav", data[0])
+            else:
+                save_bytes_to_path(
+                    f"elvenlabs_samples/session{session_num}/{voice.voiceID}-{fname}-{i}-{s}-{sb}.wav", data[0])
 
 
 def list_voices(language_code=None):
@@ -80,83 +95,42 @@ def text_to_wav(voice_name: str, voice_gender: str, text: str, folder: str, pitc
 
 
 def generate_background_samples():
-    voices = list_voices()
-    # random.shuffle(voices)
-    for ndx, voice in enumerate(voices):
-        name = voice.name
-        if 'US-Neural' in name:
-            gender = voice.ssml_gender
-            words = ["had it", "had to", "headed", "how dye do", "head to toe",
-                     "Hideo", "hadith", "had to", "hated", "hooded", "Hey Dad", "heeded"]
-            for word in words:
-                # TODO: Run session13 background
-                text_to_wav(name, gender, word,
-                            'gtts_session13_background', pitch=0)
+    sentences = []
+    for i in range(20):
+        response = openai.Completion.create(
+            engine="gpt-3.5-turbo-instruct",
+            prompt="Prompt: generate a random sentence that uses uncommon words and phrases.\n Random sentence:",
+            temperature=0.7,
+            max_tokens=64,
+            top_p=1,
+            frequency_penalty=0,
+            presence_penalty=0.6,
+            stop=["Prompt:"]
+        )
+        sentences.append(response['choices'][0]['text'].strip())
+    
+    gen_eleven_labs_sample(
+        fname='background',
+        session_num=9,
+        sentences=sentences
+    )
 
 
 def generate_heyditto_samples():
-    voices = list_voices()
-    for voice in voices:
-        name = voice.name
-        if 'US-Neural' in name:
-            gender = voice.ssml_gender
-            pitches = list(range(-20, 21))
-            random.shuffle(pitches)
-            for ndx, pitch in enumerate(pitches):
-                if ndx+1 == 20:
-                    break
-                print('generating voice with pitch %d' % pitch)
-                text_to_wav(name, gender, "Hey Ditto",
-                            'gtts_session4', pitch=pitch)
-
-
-# generate_heyditto_samples()
-# generate_background_samples()
-# sentences = ["The quick brown fox jumps over the lazy dog.",
-#              "The cat sat on the mat.",
-#              "I love you.",
-#              "I am a large language model.",
-#              "The sky is blue.",
-#              "The grass is green.",
-#              "The sun is shining.",
-#              "The birds are singing.",
-#              "It is a beautiful day.",
-#              "I am happy."]
-
-# sentences = ['Hey Ditto',
-#              'HEY DITTO!!!',
-#              'Hey? Ditto?']
-
-sentences = ['The cat chased the mouse through the garden.',
-             'The sun set behind the mountains, painting the sky in shades of pink and orange.',
-             'She smiled as she watched the children play in the park.']
-
-for sentence in sentences:
+    sentences = [
+        'Hey Ditto',
+        'HEY DITTO!!!',
+        'Hey? Ditto?',
+        'Hey Ditto...',
+        'HEY! DITTO!',
+        'Hey Ditto?'
+    ]
     gen_eleven_labs_sample(
-        text=sentence,
-        fname='heyditto'
-        # fname='background'
+        fname='heyditto',
+        session_num=12,
+        sentences=sentences
     )
 
-# gen_eleven_labs_sample(
-#     text='Hey Ditto!',
-#     fname='heyditto-exclamation'
-# )
-# gen_eleven_labs_sample(
-#     text='Hey Ditto...',
-#     fname='heyditto-dotdotdot'
-# )
 
-# words = ["had it", "had to", "headed", "how dye do", "head to toe", "Hideo", "hadith", "had to", "hated", "hooded", "Hey Dad", "heeded"]
-# words = ['hey Data', 'data', 'need data', 'dada', 'hey dude']
-# for word in words:
-#     gen_eleven_labs_sample(
-#         text=word,
-#         fname='background'
-#     )
-
-
-# gen_eleven_labs_sample(
-#     text="Sports not only provide entertainment and a way to stay active, but they also have the ability to foster teamwork, promote healthy competition, and unite people from different backgrounds and cultures.",
-#     fname='background'
-# )
+# generate_background_samples()
+generate_heyditto_samples()

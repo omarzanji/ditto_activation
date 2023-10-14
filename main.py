@@ -29,7 +29,7 @@ from python_speech_features import logfbank
 # supress tf
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-TRAIN = False
+TRAIN = True
 REINFORCE = False
 TFLITE = True
 MODEL_SELECT = 1  # 0 for HeyDittoNet-v1, 1 for HeyDittoNet-v2
