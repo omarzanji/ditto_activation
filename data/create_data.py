@@ -133,6 +133,10 @@ def generate_data() -> tuple:
     random.shuffle(activation_set)
     random.shuffle(background_set)
     # count = 0
+    music_set = []
+    for background in background_set:
+        if 'music' in background:
+            music_set.append(background)
 
     print('processing activation sets...\n')
 
@@ -175,6 +179,7 @@ def generate_data() -> tuple:
         audio_downsampled = downsample_audio(audio[0])
         combined_audio1 = combine_with(activation_phrase, background_noise)
         combined_audio2 = combine_with(activation_set[np.random.randint(len(activation_set))], background_set[np.random.randint(len(background_set))])
+        combined_audio3 = combine_with(activation_phrase, music_set[np.random.randint(len(music_set))])
 
         # sounddevice.play(audio[0], samplerate=16000)
         # time.sleep(1)
@@ -198,7 +203,8 @@ def generate_data() -> tuple:
         #     time.sleep(1)
         # sounddevice.play(combined_audio1, samplerate=16000)
         # time.sleep(1)
-        # sounddevice.play(combined_audio2, samplerate=16000)
+        # sounddevice.play(combined_audio3, samplerate=16000)
+        # print(activation_phrase)
         # time.sleep(1)
 
         # exit()
@@ -219,6 +225,8 @@ def generate_data() -> tuple:
             y.append(1)
             x.append(get_spectrograms(combined_audio2))
             y.append(1)
+            x.append(get_spectrograms(combined_audio3))
+            y.append(1)
 
         else:
             spect = get_spectrogram(audio[0])
@@ -238,8 +246,10 @@ def generate_data() -> tuple:
             y.append(1)
             x.append(get_spectrogram(combined_audio2))
             y.append(1)
+            x.append(get_spectrogram(combined_audio3))
+            y.append(1)
 
-        t_cnt += 8  # true class count
+        t_cnt += 9  # true class count
         activation_ndx += 1
 
     print('processing background sets...\n')

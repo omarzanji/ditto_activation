@@ -95,12 +95,12 @@ import time
 #         for i in range(0, int(y.size), chunk_size): # iterate through each second
 #             sf.write(f'raw_data/background_{file}_{i}_{stamp}.wav', y[i:i+chunk_size+1], 16000)
 
-# session_num = 12
-# files = os.listdir(f'elvenlabs_samples/session{session_num}/')
-# for ndx, file in enumerate(files):
-#     stamp = int(time.time())+ndx+1
-#     os.system(
-#         f'ffmpeg -y -i "elvenlabs_samples/session{session_num}/{file}" -ar 16000 "raw_data/heyditto-{stamp}-{file}.wav"')
+session_num = 14
+files = os.listdir(f'elvenlabs_samples/session{session_num}/')
+for ndx, file in enumerate(files):
+    stamp = int(time.time())+ndx+1
+    os.system(
+        f'ffmpeg -y -i "elvenlabs_samples/session{session_num}/{file}" -ar 16000 "raw_data/heyditto-{stamp}-{file}.wav"')
 
 # session_num = 9
 # files = os.listdir(f'elvenlabs_samples/session{session_num}-background/')
@@ -136,3 +136,21 @@ import time
 #         sf.write(
 #             f'raw_data/background_music_{file}_{i}_.wav', y[i:i+chunk_size+1], 16000)
 #         count += 1
+
+# files = os.listdir(f'music/')
+# num_files = len(files)
+# print(f'converting {num_files} music files to background dataset')
+# for ndx, file in enumerate(files):
+#     print(f'converting {file}')
+#     stamp = int(time.time())+ndx+1
+#     y, s = librosa.load(
+#         f'music/{file}', sr=16000, mono=True)
+#     seconds = y.size / 16000
+#     # get size of 1 second chunk by dividing total size by sample rate
+#     chunk_size = int(y.size/seconds)
+#     N = 25  # sample N seconds of audio per music file
+#     for count, x in enumerate(range(0, int(y.size), chunk_size)):  # iterate through each second
+#         if count+1 > N:
+#             break
+#         sf.write(
+#             f'raw_data/background_music_{file}_{x}_{stamp}.wav', y[x:x+chunk_size+1], 16000)

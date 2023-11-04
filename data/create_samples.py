@@ -21,7 +21,7 @@ def save_bytes_to_path(filepath: str, audioData: bytes) -> None:
     sf.write(fp, tempSoundFile.read(), tempSoundFile.samplerate)
 
 
-def gen_eleven_labs_sample(fname:str, session_num:int, sentences:list):
+def gen_eleven_labs_sample(fname:str, session_num:int, sentences:list, iterations:int=5):
 
     key = ''
     with open('api_key.json', 'r') as f:
@@ -41,7 +41,7 @@ def gen_eleven_labs_sample(fname:str, session_num:int, sentences:list):
     random.shuffle(voices)
     for voice in voices:
         # if 'new' in voice.initialName:
-        for i in range(5):
+        for i in range(iterations):
             print(
                 f'generating {voice.initialName}-{voice.voiceID} iteration {i+1}')
             s = np.random.rand()
@@ -112,7 +112,8 @@ def generate_background_samples():
     gen_eleven_labs_sample(
         fname='background',
         session_num=9,
-        sentences=sentences
+        sentences=sentences,
+        iterations=5
     )
 
 
@@ -127,8 +128,9 @@ def generate_heyditto_samples():
     ]
     gen_eleven_labs_sample(
         fname='heyditto',
-        session_num=12,
-        sentences=sentences
+        session_num=14,
+        sentences=sentences,
+        iterations=15
     )
 
 
