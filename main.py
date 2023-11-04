@@ -319,7 +319,7 @@ class HeyDittoNet:
                         self.train_data_x.append(normalized)
                         self.train_data_y.append(0)
             else:
-                time.sleep(0.01)
+                # time.sleep(0.01)
                 # print(f'{pred[0][0]*100}%')
                 pass
 
@@ -451,7 +451,7 @@ class HeyDittoNet:
                                 callback=self.callback,
                                 blocksize=int(RATE/4)) as stream:
                 while True:
-
+                    time.sleep(0.01)
                     self.activation_requests.check_for_gesture()
                     self.activation_requests.check_for_request()
                     if not self.activation_requests.mic_on:
