@@ -108,7 +108,7 @@ class HeyDittoNet:
             LSTM_FEATURES = int(2*CNN_OUT)  # num of features per LSTM unit
             model = Sequential([
                 layers.Input(shape=xshape),
-                layers.Resizing(26, 26),
+                layers.Resizing(32, 32),
                 layers.Normalization(),
 
                 layers.Conv2D(28, (3, 3), strides=(1, 1),
@@ -364,7 +364,7 @@ class HeyDittoNet:
         # as image-like input data with convolution layers (which expect
         # shape (`batch_size`, `height`, `width`, `channels`).
         # spectrogram = spectrogram[..., tf.newaxis]
-        fbank_feat = logfbank(equal_length, 16000, nfilt=26)
+        fbank_feat = logfbank(equal_length, 16000, nfilt=32)
         spectrogram = fbank_feat[..., tf.newaxis]
         return np.array(spectrogram).astype('float32')
 

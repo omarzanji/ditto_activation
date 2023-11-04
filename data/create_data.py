@@ -439,7 +439,7 @@ def get_spectrogram(waveform: list) -> list:
     # as image-like input data with convolution layers (which expect
     # shape (`batch_size`, `height`, `width`, `channels`).
     # spectrogram = spectrogram[..., tf.newaxis]
-    fbank_feat = logfbank(equal_length, 16000, nfilt=26)
+    fbank_feat = logfbank(equal_length, 16000, nfilt=32)
     spectrogram = fbank_feat[..., tf.newaxis]
     return spectrogram
 
