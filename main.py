@@ -60,6 +60,16 @@ class HeyDittoNet:
         else:
             self.retries = 0  # if can't connect to device
             self.load_model()
+            self.init_activation_requests()
+
+    def init_activation_requests(self):
+        # import activation_requests
+        if self.path == 'modules/ditto_activation/':
+            # import Ditto Activation requests
+            from modules.ditto_activation.activation_requests import ActivationRequests
+        elif self.path == '':
+            from activation_requests import ActivationRequests
+        self.activation_requests = ActivationRequests()
 
     def load_data(self):
         try:
@@ -425,13 +435,8 @@ class HeyDittoNet:
         self.frames = 0
         self.activation_time = None
 
-        # import activation_requests
-        if self.path == 'modules/ditto_activation/':
-            # import Ditto Activation requests
-            from modules.ditto_activation.activation_requests import ActivationRequests
-        elif self.path == '':
-            from activation_requests import ActivationRequests
-        self.activation_requests = ActivationRequests()
+        self.init_activation_requests()
+
         if self.activation_requests.mic_on:
             print('\nidle...\n')
         else:

@@ -178,7 +178,6 @@ class ActivationRequests:
                 print("\n[Ditto toggle mic request received]\n")
                 cur.execute("DROP TABLE ditto_requests")
                 SQL.commit()
-
                 modes = ['off', 'on']
                 self.mic_on = not self.mic_on
                 mode = modes[int(self.mic_on)]
