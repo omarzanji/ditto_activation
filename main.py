@@ -424,7 +424,7 @@ class HeyDittoNet:
             conf['sessions_total'] = sesssion_number+1
             json.dump(conf, f)
 
-    def listen_for_name(self):
+    def listen_for_name(self, no_mic_mode=False):
         # sampling rate
         fs = RATE
 
@@ -446,6 +446,14 @@ class HeyDittoNet:
             device_id = 1
         else:
             device_id = sd.default.device[0]
+
+        if no_mic_mode:
+            while True:
+                time.sleep(0.01)
+                self.activation_requests.check_for_gesture()
+                self.activation_requests.check_for_request()
+                if self.activation_requests.activated:
+                    return 1
 
         try:
             with sd.InputStream(device=device_id,
