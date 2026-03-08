@@ -1,0 +1,33 @@
+# Hey Ditto Wake Word Detection - Requirements
+# Install with: pip install -r requirements.txt
+
+# Core ML Framework
+tensorflow>=2.15.0
+
+# Audio Processing
+librosa>=0.10.0
+sounddevice>=0.4.6
+soundfile>=0.12.1
+pydub>=0.25.1
+python_speech_features>=0.6
+
+# Data Augmentation
+audiomentations>=0.34.0
+
+# TTS Providers
+edge-tts>=6.1.0
+elevenlabs>=1.0.0
+openai>=1.0.0
+
+# Environment & Utilities
+python-dotenv>=1.0.0
+numpy>=1.24.0
+scikit-learn>=1.3.0
+matplotlib>=3.7.0
+tqdm>=4.65.0
+
+# Type hints
+typing-extensions>=4.5.0
+
+# Model Export
+tensorflowjs>=4.0.0
