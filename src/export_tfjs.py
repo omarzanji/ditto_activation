@@ -1,8 +1,8 @@
 """
 Export HeyDittoNet model to TensorFlow.js format for desktop app integration.
 
-Converts Keras model -> SavedModel -> tfjs graph model via
-tensorflowjs.converters.convert_tf_saved_model().
+Exports via concrete function → SavedModel → tfjs graph model to avoid
+Keras 3 serialization incompatibilities with tfjs-layers.
 
 Output: models/HeyDittoNet-v3-tfjs/ (model.json + weight shards)
 
@@ -35,6 +35,9 @@ def export_to_tfjs(
 ) -> Path:
     """
     Export Keras model to TensorFlow.js graph model format.
+
+    Uses concrete function export to avoid Keras 3 serialization issues
+    (inbound_nodes format incompatible with tfjs-layers).
 
     Args:
         model_path: Path to .keras model file
@@ -71,16 +74,29 @@ def export_to_tfjs(
     model = keras.models.load_model(str(model_path))
     model.summary()
 
-    # Step 2: Save as SavedModel format (required intermediate step)
-    saved_model_dir = MODELS_DIR / "temp_saved_model"
-    print(f"\nConverting to SavedModel format...")
-    if saved_model_dir.exists():
+    # Step 2: Create a concrete function to freeze the graph
+    # This avoids Keras 3 serialization issues with BatchNorm etc.
+    print("\nCreating concrete function...")
+
+    @tf.function(input_signature=[tf.TensorSpec(shape=[1, 149, 32, 1], dtype=tf.float32)])
+    def serve(x):
+        return model(x, training=False)
+
+    # Step 3: Save as SavedModel with the concrete function
+    saved_model_dir = str(output_path.parent / "HeyDittoNet-v3-savedmodel-tmp")
+    if os.path.exists(saved_model_dir):
         shutil.rmtree(saved_model_dir)
-    tf.saved_model.save(model, str(saved_model_dir))
+
+    print("Saving as SavedModel with concrete function...")
+    tf.saved_model.save(
+        model,
+        saved_model_dir,
+        signatures={'serving_default': serve}
+    )
     print(f"SavedModel saved to {saved_model_dir}")
 
-    # Step 3: Convert SavedModel to tfjs
-    print(f"\nConverting to TensorFlow.js format...")
+    # Step 4: Convert SavedModel to tfjs graph model
+    print(f"\nConverting to TensorFlow.js graph model...")
 
     try:
         import tensorflowjs as tfjs
@@ -89,28 +105,23 @@ def export_to_tfjs(
             shutil.rmtree(output_path)
         output_path.mkdir(parents=True, exist_ok=True)
 
-        quantization_dtype = 'uint8' if quantize else None
-
         tfjs.converters.convert_tf_saved_model(
-            str(saved_model_dir),
+            saved_model_dir,
             str(output_path),
-            quantization_dtype=quantization_dtype
+            signature_def='serving_default'
         )
 
-        print(f"\nTFJS model saved to {output_path}")
+        print(f"\nTFJS graph model saved to {output_path}")
 
     except ImportError:
         print("\nError: tensorflowjs not installed.")
         print("Install with: pip install tensorflowjs")
-        # Cleanup
-        if saved_model_dir.exists():
-            shutil.rmtree(saved_model_dir)
         raise
-
-    # Cleanup temp SavedModel
-    if saved_model_dir.exists():
-        shutil.rmtree(saved_model_dir)
-        print("Cleaned up temporary SavedModel")
+    finally:
+        # Clean up temporary SavedModel
+        if os.path.exists(saved_model_dir):
+            shutil.rmtree(saved_model_dir)
+            print("Cleaned up temporary SavedModel")
 
     # Print output files
     print(f"\nOutput files:")
